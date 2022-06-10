@@ -2,7 +2,7 @@
 
 由于golang不支持可选参数，所以此项目通过抽象参数为Func进行处理，下面仍以可选参数来介绍，但请勿混淆概念
 
-```golang
+```go
 type Ext func(ep *extensions?Package)
 ```
 
@@ -25,13 +25,13 @@ type Ext func(ep *extensions?Package)
 
 为了使用可选参数，需要在文件中
 
-```golang
+```go
 import "github.com/sari3l/requests/ext"
 ```
 
 另外为了方便处理数据，对以下数据类型取了别名，可通过`ext.Dict`、`ext.List`调用
 
-```golang
+```go
 type Dict map[string]string
 type List []string
 ```
@@ -44,7 +44,7 @@ type List []string
 
 默认`true`，即自动处理跳转至最终页面，同时会将中间响应保存在`Response.History`中
 
-```golang
+```go
 var resp *requests.Response
 
 resp = requests.Get("https://httpbin.org/redirect/2", ext.AllowRedirects(false))
@@ -60,7 +60,7 @@ Auth认证稍微有些特别，因为其多样性，所以其是以接口形式�
 - ext.BasicAuth
 - ext.BearerAuth
 
-```golang
+```go
 var auth ext.AuthInter
 var resp *requests.Response
 
@@ -77,7 +77,7 @@ fmt.Println(resp.Json())
 
 实际的Cookies并不友好，所以这里采用`ext.Dict`方便设置，在内部自动转换为`[]*http.Cookie`
 
-```golang
+```go
 cookies := ext.Dict{
     "key": "value",
 }
@@ -91,7 +91,7 @@ data内容最终转换为`*io.ReadCloser`数据，并会自动设置`Content-Typ
 
 注：不会判断请求方法是否合理，需要自行注意
 
-```golang
+```go
 data := ext.Dict{
     "key": "value",
 }
@@ -106,7 +106,7 @@ files内容最终转换为`*io.ReadCloser`数据，并会自动设置`Content-Ty
 - 键：文件名
 - 值：文件所在绝对路径
 
-```golang
+```go
 files := ext.Dict{
     "xxx.jpg": "/path/xxx.jpg",
 }
@@ -118,7 +118,7 @@ fmt.Println(resp.Json())
 
 headers内容最终转化为`*http.Header`数据，在设置前会检查是否有非法值
 
-```golang
+```go
 headers := ext.Dict{
     "Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
     "Accept-Encoding": "gzip, deflate, br",
@@ -135,7 +135,7 @@ fmt.Println(resp.Json())
 
 Hook相关内容稍微复杂，具体内容请看`指南`[Hook](hook.md)一节，这里只简单演示如何使用
 
-```golang
+```go
 func main() {
     hooks := ext.HooksDict{
         "response": []ext.Hook{printHeaders},
@@ -154,7 +154,7 @@ func printHeaders(response any) (error, any) {
 
 json实在没有直白一点的实现，所以目前采用`map[string]interface{}`，最终转换为`*io.ReadCloser`数据，并会自动设置`Content-Type`为`application/json`
 
-```golang
+```go
 json := map[string]interface{}{
     "string": "test",
     "list":   []interface{}{"1", 2},
@@ -170,7 +170,7 @@ fmt.Println(resp.Json())
 
 与直接在URL中拼接参数不同，通过`ext.Params`填充的参数会经过`URLEncode`
 
-```golang
+```go
 var resp *requests.Response
 
 params := ext.Dict{
@@ -187,7 +187,7 @@ fmt.Println(resp.Json())
 
 与python-requests中proxy不同，`net.http.Transport.Proxy`只支持单条`url.URL`，所以需要自行确认代理协议
 
-```golang
+```go
 resp := requests.Get("https://github.com/", ext.Proxy("http://127.0.0.1:8080"))
 ```
 
@@ -197,11 +197,21 @@ resp := requests.Get("https://github.com/", ext.Proxy("http://127.0.0.1:8080"))
 
 会自动设置`Content-Type`为`application/octet-stream`
 
-```golang
+```go
 stream, _ := os.Open("/path/s.png")
-resp := requests.Post("https://httpbin.org/post", ext.Stream(stream), ext.Proxy("http://127.0.0.1:8080"), ext.Verify(false))
+resp := requests.Post("https://httpbin.org/post", ext.Stream(stream))
 fmt.Println(resp.Json())
 ```
+
+## ext.Timeout(int)
+
+> 连接超时时限
+
+```go
+resp := requests.Get("https://httpbin.org/get", ext.Timeout(3))
+fmt.Println(resp.Json())
+```
+
 
 ## ext.Verify(bool)
 
@@ -209,6 +219,6 @@ fmt.Println(resp.Json())
 
 默认`true`，当设置代理抓包时证书可能无法通过此校验需要设置为`false`
 
-```golang
+```go
 resp := requests.Get("https://github.com/", ext.Verify(false))
 ```

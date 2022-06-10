@@ -2,7 +2,7 @@
 
 对http.Response进行封装，方便hook处理，同时添加一些属性、方法
 
-```golang
+```go
 type Response struct {
     *http.Response
     cookies []*http.Cookie

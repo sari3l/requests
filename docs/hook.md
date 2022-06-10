@@ -14,13 +14,13 @@ Hook 用于在底层请求前后，对`请求`、`响应`内容进行修改，�
 
 所有`自定义Hook函数`均须满足`ext.Hook`函数类型
 
-```golang
+```go
 type Hook func(object any) (error, any)
 ```
 
 为了方便使用，如果是通过`反射`修改了 object，可以直接返回`nil, nil`
 
-```golang
+```go
 return nil, nil
 ```
 
@@ -31,7 +31,7 @@ Hook字典是为方便使用创建的数据类型
 - 键：`request/client/response`之一
 - 值：`Hook Func`列表
 
-```golang
+```go
 type HooksDict map[string][]Hook
 ```
 
@@ -39,7 +39,7 @@ type HooksDict map[string][]Hook
 
 自定义Hook函数通过`ext.Hooks`可选参数进行装填，单次请求进行Hook效率不高，推荐封装使用
 
-```golang
+```go
 import (
     "fmt"
     "github.com/sari3l/requests"

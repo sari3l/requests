@@ -10,7 +10,7 @@ go get github.com/sari3l/requests
 
 在项目中`import "github.com/sari3l/requests"`即可实现基础请求
 
-```golang
+```go
 import (
     "fmt"
     "github.com/sari3l/requests"
@@ -26,7 +26,7 @@ func main() {
 
 需要额外`import "github.com/sari3l/requests/ext"`，可在[扩展参数](extensions.md?id=可选参数)中查看具体支持的参数内容
 
-```golang
+```go
 import (
     "fmt"
     "github.com/sari3l/requests"

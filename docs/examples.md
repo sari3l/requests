@@ -2,7 +2,7 @@
 
 ## Twitter API
 
-```golang
+```go
 import (
     "fmt"
     "github.com/sari3l/requests"
@@ -33,7 +33,7 @@ func main() {
 
 通过生成`Session`、`PrepareRequest`初始化请求，并替换`Transport`内容实现
 
-```golang
+```go
 import (
     "fmt"
     "github.com/CUCyber/ja3transport"
@@ -54,7 +54,7 @@ func main() {
 
 通过`Hook`方式替换`Transport`内容实现
 
-```golang
+```go
 import (
     "fmt"
     "github.com/CUCyber/ja3transport"
@@ -86,7 +86,7 @@ func modifyJa3Fingerprint(client any) (error, any) {
 
 在`requests/tools`中提供了快速生成JA3Hook函数的方法，方便`Hook`使用
 
-```golang
+```go
 import (
     "fmt"
     "github.com/sari3l/requests"
