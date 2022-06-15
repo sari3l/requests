@@ -171,12 +171,9 @@ func (prep *prepareRequest) prepareBody(data, files ext.Dict, json map[string]in
 		for k, v := range data {
 			dataValues.Set(k, v)
 		}
-		_dataDecoded, err := nUrl.QueryUnescape(dataValues.Encode())
-		if err != nil {
-			return nil
-		}
-		closer = io.NopCloser(strings.NewReader(_dataDecoded))
-		contentLength = len(_dataDecoded)
+		_dataEncoded := dataValues.Encode()
+		closer = io.NopCloser(strings.NewReader(_dataEncoded))
+		contentLength = len(_dataEncoded)
 		contentType = "application/x-www-form-urlencoded"
 	}
 
