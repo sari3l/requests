@@ -6,6 +6,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/sari3l/requests)](https://goreportcard.com/report/github.com/sari3l/requests)
 [![CodeFactor](https://www.codefactor.io/repository/github/sari3l/requests/badge)](https://www.codefactor.io/repository/github/sari3l/requests)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fsari3l%2Frequests.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fsari3l%2Frequests?ref=badge_shield)
 
 <h1 align="center"><img src="https://raw.githubusercontent.com/sari3l/requests/main/docs/static/logo.png" alt="Logo"/></h1>
 
@@ -22,3 +23,5 @@ go get github.com/sari3l/requests
 ## Licenses
 
 [MIT License](https://github.com/sari3l/requests/blob/main/LICENSE)
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fsari3l%2Frequests.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fsari3l%2Frequests?ref=badge_large)
