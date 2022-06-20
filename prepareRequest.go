@@ -145,9 +145,9 @@ func (prep *prepareRequest) prepareBody(data, files ext.Dict, json map[string]in
 		contentType = "application/octet-stream"
 	} else if files != nil {
 		buffer := bytes.Buffer{}
-		multiPart := multipart.NewWriter(&buffer)
+		writer := multipart.NewWriter(&buffer)
 		for field, filename := range files {
-			part, err := multiPart.CreateFormFile(field, filename)
+			part, err := writer.CreateFormFile(field, filename)
 			if err != nil {
 				fmt.Printf("Upload %s failed!", filename)
 				panic(err)
@@ -162,7 +162,12 @@ func (prep *prepareRequest) prepareBody(data, files ext.Dict, json map[string]in
 				panic(err)
 			}
 		}
-		defer multiPart.Close()
+		if data != nil {
+			for k, v := range data {
+				_ = writer.WriteField(k, v)
+			}
+		}
+		defer writer.Close()
 		closer = ioutil.NopCloser(bytes.NewReader(buffer.Bytes()))
 		contentLength = buffer.Len()
 		contentType = "multipart/form-data"
