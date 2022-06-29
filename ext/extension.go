@@ -18,7 +18,7 @@ type ExtensionPackage struct {
 	Headers        Dict
 	Cookies        Dict
 	AllowRedirects bool
-	Json           map[string]interface{}
+	Json           map[string]any
 	Files          Dict
 	Stream         io.Reader
 	Auth           AuthInter
@@ -71,7 +71,7 @@ func Hooks(hooksDict HooksDict) Ext {
 	}
 }
 
-func Json(json map[string]interface{}) Ext {
+func Json(json map[string]any) Ext {
 	return func(ep *ExtensionPackage) {
 		ep.Json = json
 	}

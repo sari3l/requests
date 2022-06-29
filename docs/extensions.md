@@ -150,15 +150,15 @@ func printHeaders(response any) (error, any) {
 }
 ```
 
-## ext.Json(map[string]interface{})
+## ext.Json(map[string]any)
 
-json实在没有直白一点的实现，所以目前采用`map[string]interface{}`，最终转换为`*io.ReadCloser`数据，并会自动设置`Content-Type`为`application/json`
+json实在没有直白一点的实现，所以目前采用`map[string]any`，最终转换为`*io.ReadCloser`数据，并会自动设置`Content-Type`为`application/json`
 
 ```go
-json := map[string]interface{}{
+json := map[string]any{
     "string": "test",
-    "list":   []interface{}{"1", 2},
-    "dict": map[string]interface{}{
+    "list":   []any{"1", 2},
+    "dict": map[string]any{
         "key": "value",
     },
 }

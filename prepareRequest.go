@@ -25,7 +25,7 @@ type prepareRequest struct {
 	hooks   ext.HooksDict
 }
 
-func PrepareRequest(method string, url string, params ext.Dict, headers ext.Dict, cookies ext.Dict, data ext.Dict, json map[string]interface{}, files ext.Dict, stream io.Reader, auth ext.AuthInter, hooks ext.HooksDict) (error, *prepareRequest) {
+func PrepareRequest(method string, url string, params ext.Dict, headers ext.Dict, cookies ext.Dict, data ext.Dict, json map[string]any, files ext.Dict, stream io.Reader, auth ext.AuthInter, hooks ext.HooksDict) (error, *prepareRequest) {
 	var err error
 
 	_prepareRequest := new(prepareRequest)
@@ -125,7 +125,7 @@ func (prep *prepareRequest) prepareCookies(cookies ext.Dict) error {
 	return nil
 }
 
-func (prep *prepareRequest) prepareBody(data, files ext.Dict, json map[string]interface{}, stream io.Reader) error {
+func (prep *prepareRequest) prepareBody(data, files ext.Dict, json map[string]any, stream io.Reader) error {
 	var closer io.ReadCloser
 	contentType := ""
 	contentLength := 0
