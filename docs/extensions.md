@@ -40,7 +40,7 @@ type List []string
 
 ## ext.AllowRedirects(bool)
 
-> 是否开启自动跳转
+> 启用自动跳转
 
 默认`true`，即自动处理跳转至最终页面，同时会将中间响应保存在`Response.History`中
 
@@ -87,6 +87,8 @@ fmt.Println(resp.Json())
 
 ## ext.Data(ext.Dict)
 
+> Body数据为Form表单
+
 data内容最终转换为`*io.ReadCloser`数据，并会自动设置`Content-Type`为`application/x-www-form-urlencoded`
 
 注：不会判断请求方法是否合理，需要自行注意
@@ -100,6 +102,8 @@ fmt.Println(resp.Json())
 ```
 
 ## ext.Files(ext.Dict)
+
+> multipart/form-data 文件上传
 
 files内容最终转换为`*io.ReadCloser`数据，并会自动设置`Content-Type`为`multipart/form-data`
 
@@ -152,6 +156,8 @@ func printHeaders(response any) (error, any) {
 
 ## ext.Json(map[string]any)
 
+> Body数据为Json内容
+
 json实在没有直白一点的实现，所以目前采用`map[string]any`，最终转换为`*io.ReadCloser`数据，并会自动设置`Content-Type`为`application/json`
 
 ```go
@@ -167,6 +173,8 @@ fmt.Println(resp.Json())
 ```
 
 ## ext.Params(ext.Dict)
+
+> URL 中的请求参数
 
 与直接在URL中拼接参数不同，通过`ext.Params`填充的参数会经过`URLEncode`
 
@@ -185,7 +193,9 @@ fmt.Println(resp.Json())
 
 ## ext.Proxy(string)
 
-与python-requests中proxy不同，`net.http.Transport.Proxy`只支持单条`url.URL`，所以需要自行确认代理协议
+> 中间代理
+
+与python-requests中proxy不同，`net.http.Transport.Proxy`只支持单条`url.URL`，所以需要自行确认代理协议，默认支持`http(s)`、`socks(5)`
 
 ```go
 resp := requests.Get("https://github.com/", ext.Proxy("http://127.0.0.1:8080"))
