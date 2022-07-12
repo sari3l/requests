@@ -8,18 +8,18 @@ import (
 	"encoding/hex"
 )
 
-func HmacSha256(data string, secret string) []byte {
-	h := hmac.New(sha256.New, []byte(secret))
-	h.Write([]byte(data))
+func HmacSha256(data []byte, secret []byte) []byte {
+	h := hmac.New(sha256.New, secret)
+	h.Write(data)
 	return h.Sum(nil)
 }
 
-func HmacSha256Base64Encode(data string, secret string) string {
+func HmacSha256Base64Encode(data []byte, secret []byte) string {
 	return base64.StdEncoding.EncodeToString(HmacSha256(data, secret))
 }
 
-func Md5(str string) string {
+func Md5(data []byte) string {
 	h := md5.New()
-	h.Write([]byte(str))
+	h.Write(data)
 	return hex.EncodeToString(h.Sum(nil))
 }

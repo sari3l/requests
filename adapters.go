@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// 后续转为接口，需要引入其他adapter
 type adapter struct {
 }
 

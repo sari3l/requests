@@ -49,3 +49,7 @@ type Response struct {
 ## ContentType()
 
 返回响应头中的`Content-Type`值
+
+## URLs()
+
+返回响应页面中的所有链接

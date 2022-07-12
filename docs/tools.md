@@ -29,11 +29,11 @@
 
 大多是比较常见的函数，具体不解释
 
-> func HmacSha256(data string, secret string) []byte
+> func HmacSha256(data []byte, secret []byte) []byte
 
-> func HmacSha256Base64Encode(data string, secret string) string
+> func HmacSha256Base64Encode(data []byte, secret []byte) string
 
-> func Md5(str string) string
+> func Md5(data []byte) string
 
 ## Hooks
 

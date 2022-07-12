@@ -66,3 +66,9 @@ func (resp *Response) Save(filename string) error {
 func (resp *Response) ContentType() string {
 	return resp.Response.Header.Get("Content-Type")
 }
+
+func (resp *Response) URLs() []string {
+	links := linkRegexCompiled.FindAllString(resp.Content, -1)
+	originUrl := resp.Request.URL
+	return *processLinks(originUrl, &links)
+}
