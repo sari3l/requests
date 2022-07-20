@@ -23,7 +23,7 @@ var linkRegexCompiled = regexp.MustCompile(`(?:"|')(((?:[a-zA-Z]{1,10}://|//)[^"
 
 func checkHeaderValidity(key, value string) error {
 	if !cleanHeaderRegexStr.MatchString(value) {
-		return errors.New(fmt.Sprintf("header %s 值结尾错误", key))
+		return errors.New(fmt.Sprintf("bad end of header %s", key))
 	}
 	return nil
 }

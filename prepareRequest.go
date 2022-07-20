@@ -4,7 +4,6 @@ import (
 	"bytes"
 	eJson "encoding/json"
 	"errors"
-	"fmt"
 	"github.com/sari3l/requests/ext"
 	"github.com/sari3l/requests/types"
 	"io"
@@ -147,12 +146,10 @@ func (prep *prepareRequest) prepareBody(data, files types.Dict, json map[string]
 		for field, filename := range files {
 			part, err := writer.CreateFormFile(field, filename)
 			if err != nil {
-				fmt.Printf("Upload %s failed!", filename)
 				panic(err)
 			}
 			file, err := os.Open(filename)
 			if err != nil {
-				fmt.Printf("Read %s failed!", filename)
 				panic(err)
 			}
 			_, err = io.Copy(part, file)

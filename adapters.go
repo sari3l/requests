@@ -1,10 +1,10 @@
 package requests
 
 import (
-	"fmt"
 	"github.com/sari3l/requests/ext"
 	"github.com/sari3l/requests/types"
 	"io/ioutil"
+	"log"
 	"net/http"
 	nUrl "net/url"
 	"strconv"
@@ -50,7 +50,7 @@ func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.Ho
 
 	err, response := a.buildResponse(req.Request, resp)
 	if err != nil {
-		fmt.Printf("%v", err)
+		log.Fatalln(err)
 		return err, nil
 	}
 
