@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	nUrl "net/url"
+	"reflect"
 	"regexp"
 	"strings"
 )
@@ -20,6 +21,9 @@ const DefaultTimeout = 5 // time.Second
 
 var cleanHeaderRegexStr = regexp.MustCompile(`^\S[^\r\n]*$|^$`)
 var linkRegexCompiled = regexp.MustCompile(`(?:"|')(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']{0,})|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]{1,})|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|/][^"|']{0,}|))|([a-zA-Z0-9_\-]{1,}\.(?:php|asp|aspx|jsp|json|action|html|js|txt|xml)(?:\?[^"|']{0,}|)))(?:"|')`)
+
+// gzip https://en.wikipedia.org/wiki/Gzip
+var gzipFlag = []byte{0x1f, 0x8b}
 
 func checkHeaderValidity(key, value string) error {
 	if !cleanHeaderRegexStr.MatchString(value) {
@@ -36,7 +40,12 @@ func defaultHeaders() *http.Header {
 
 func decompressRaw(raw *[]byte, encoding string) error {
 	if encoding == "" {
-		return nil
+		// 解析压缩魔术头
+		if reflect.DeepEqual((*raw)[:2], gzipFlag) {
+			encoding = "gzip"
+		} else {
+			return nil
+		}
 	}
 	switch strings.ToLower(encoding) {
 	case "gzip":
