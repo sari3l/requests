@@ -3,6 +3,7 @@ package requests
 import (
 	"fmt"
 	"github.com/sari3l/requests/ext"
+	"github.com/sari3l/requests/types"
 	"io/ioutil"
 	"net/http"
 	nUrl "net/url"
@@ -14,7 +15,7 @@ import (
 type adapter struct {
 }
 
-func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks ext.HooksDict) (error, *Response) {
+func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.HooksDict) (error, *Response) {
 	req := &Request{Request: &http.Request{Proto: "HTTP/1.1"}}
 
 	req.Method = prep.method

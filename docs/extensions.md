@@ -29,11 +29,14 @@ type Ext func(ep *extensions?Package)
 import "github.com/sari3l/requests/ext"
 ```
 
-另外为了方便处理数据，对以下数据类型取了别名，可通过`ext.Dict`、`ext.List`调用
+另外为了方便处理数据，对以下数据类型取了别名，可通过引入`github.com/sari3l/requests/types`调用
 
 ```go
 type Dict map[string]string
 type List []string
+type Json map[string]any
+type Hook func(object any) (error, any)
+type HooksDict map[string][]Hook
 ```
 
 注：单个请求可设置多个可选参数，下面是对单个参数的解释，所以均只设置相关参数
@@ -53,7 +56,7 @@ resp = requests.Get("https://httpbin.org/redirect/2", ext.AllowRedirects(true))
 fmt.Println(resp.StatusCode)
 ```
 
-## ext.Auth(ext.AuthInter)
+## ext.Auth(types.AuthInter)
 
 Auth认证稍微有些特别，因为其多样性，所以其是以接口形式定义，具体实现为
 
@@ -61,7 +64,7 @@ Auth认证稍微有些特别，因为其多样性，所以其是以接口形式�
 - ext.BearerAuth
 
 ```go
-var auth ext.AuthInter
+var auth types.AuthInter
 var resp *requests.Response
 
 auth = ext.BasicAuth{Username: "test", Password: "test"}
@@ -73,19 +76,19 @@ resp = requests.Get("https://httpbin.org/bearer", ext.Auth(auth))
 fmt.Println(resp.Json())
 ```
 
-## ext.Cookies(ext.Dict)
+## ext.Cookies(types.Dict)
 
 实际的Cookies并不友好，所以这里采用`ext.Dict`方便设置，在内部自动转换为`[]*http.Cookie`
 
 ```go
-cookies := ext.Dict{
+cookies := types.Dict{
     "key": "value",
 }
 resp := requests.Get("https://httpbin.org/cookies", ext.Cookies(cookies))
 fmt.Println(resp.Json())
 ```
 
-## ext.Data(ext.Dict)
+## ext.Data(types.Dict)
 
 > Body数据为Form表单
 
@@ -94,14 +97,14 @@ data内容最终转换为`*io.ReadCloser`数据，并会自动设置`Content-Typ
 注：不会判断请求方法是否合理，需要自行注意
 
 ```go
-data := ext.Dict{
+data := types.Dict{
     "key": "value",
 }
 resp := requests.Post("https://httpbin.org/post", ext.Data(data))
 fmt.Println(resp.Json())
 ```
 
-## ext.Files(ext.Dict)
+## ext.Files(types.Dict)
 
 > multipart/form-data 文件上传
 
@@ -111,19 +114,19 @@ files内容最终转换为`*io.ReadCloser`数据，并会自动设置`Content-Ty
 - 值：文件所在绝对路径
 
 ```go
-files := ext.Dict{
+files := types.Dict{
     "xxx.jpg": "/path/xxx.jpg",
 }
 resp := requests.Post("https://httpbin.org/post", ext.Files(files))
 fmt.Println(resp.Json())
 ```
 
-## ext.Headers(ext.Dict)
+## ext.Headers(types.Dict)
 
 headers内容最终转化为`*http.Header`数据，在设置前会检查是否有非法值
 
 ```go
-headers := ext.Dict{
+headers := types.Dict{
     "Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
     "Accept-Encoding": "gzip, deflate, br",
     "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
@@ -135,14 +138,14 @@ resp := requests.Get("https://httpbin.org/headers", ext.Headers(headers))
 fmt.Println(resp.Json())
 ```
 
-## ext.Hooks(ext.HookDict)
+## ext.Hooks(types.HookDict)
 
 Hook相关内容稍微复杂，具体内容请看`指南`[Hook](hook.md)一节，这里只简单演示如何使用
 
 ```go
 func main() {
-    hooks := ext.HooksDict{
-        "response": []ext.Hook{printHeaders},
+    hooks := types.HooksDict{
+        "response": []types.Hook{printHeaders},
     }
     resp := requests.Get("https://httpbin.org/headers", ext.Hooks(hooks))
     fmt.Println(resp.Json()
@@ -154,17 +157,17 @@ func printHeaders(response any) (error, any) {
 }
 ```
 
-## ext.Json(map[string]any)
+## ext.Json(types.Json)
 
 > Body数据为Json内容
 
 json实在没有直白一点的实现，所以目前采用`map[string]any`，最终转换为`*io.ReadCloser`数据，并会自动设置`Content-Type`为`application/json`
 
 ```go
-json := map[string]any{
+json := types.Json{
     "string": "test",
     "list":   []any{"1", 2},
-    "dict": map[string]any{
+    "dict": types.Json{
         "key": "value",
     },
 }
@@ -172,7 +175,7 @@ resp := requests.Post("https://httpbin.org/post", ext.Json(json))
 fmt.Println(resp.Json())
 ```
 
-## ext.Params(ext.Dict)
+## ext.Params(types.Dict)
 
 > URL 中的请求参数
 
@@ -181,7 +184,7 @@ fmt.Println(resp.Json())
 ```go
 var resp *requests.Response
 
-params := ext.Dict{
+params := types.Dict{
     "key": "%%25",
 }
 resp = requests.Get("https://httpbin.org/get", ext.Params(params))

@@ -2,16 +2,17 @@ package requests
 
 import (
 	"crypto/tls"
-	"fmt"
 	"github.com/jinzhu/copier"
 	"github.com/sari3l/requests/ext"
+	"github.com/sari3l/requests/types"
+	"log"
 	"net/http"
 	nUrl "net/url"
 	"time"
 )
 
 type session struct {
-	ext.ExtensionPackage
+	types.ExtensionPackage
 	Client       *http.Client
 	adapter      *adapter
 	cacheRequest *prepareRequest
@@ -31,7 +32,7 @@ func Session(timeout int, proxy string, redirect bool, verify bool) *session {
 	return s
 }
 
-func (s *session) init(method string, url string, exts *[]ext.Ext) *session {
+func (s *session) init(method string, url string, exts *[]types.Ext) *session {
 	s.Method = method
 	s.Url = url
 
@@ -45,10 +46,12 @@ func (s *session) init(method string, url string, exts *[]ext.Ext) *session {
 func (s *session) request() *Response {
 	err, prep := s.prepareRequest()
 	if err != nil {
+		log.Fatal(err)
 		return nil
 	}
 
 	if err = s.prepareClient(); err != nil {
+		log.Fatal(err)
 		return nil
 	}
 
@@ -80,9 +83,10 @@ func (s *session) Send(prep *prepareRequest) *Response {
 
 	// 计时开机
 	startTime := time.Now().UnixMilli()
+	// 后续根据协议，切换adapter
 	err, r := s.adapter.send(s.Client, prep, s.Hooks)
 	if err != nil {
-		fmt.Printf("%v", err)
+		log.Fatal(err)
 		return nil
 	}
 	usedTime := time.Now().UnixMilli() - startTime
@@ -104,7 +108,7 @@ func (s *session) Send(prep *prepareRequest) *Response {
 	return r
 }
 
-func (s *session) RegisterHook(key string, hook ext.Hook) error {
+func (s *session) RegisterHook(key string, hook types.Hook) error {
 	if s.Hooks == nil {
 		s.Hooks = ext.DefaultHooks()
 	}
@@ -186,26 +190,26 @@ func (s *session) SetVerify(verify bool) error {
 	return s.prepareVerify()
 }
 
-func (s *session) Get(url string, ext ...ext.Ext) *Response {
+func (s *session) Get(url string, ext ...types.Ext) *Response {
 	return s.init("Get", url, &ext).request()
 }
 
-func (s *session) Post(url string, ext ...ext.Ext) *Response {
+func (s *session) Post(url string, ext ...types.Ext) *Response {
 	return s.init("Post", url, &ext).request()
 }
 
-func (s *session) Put(url string, ext ...ext.Ext) *Response {
+func (s *session) Put(url string, ext ...types.Ext) *Response {
 	return s.init("Put", url, &ext).request()
 }
 
-func (s *session) Delete(url string, ext ...ext.Ext) *Response {
+func (s *session) Delete(url string, ext ...types.Ext) *Response {
 	return s.init("Delete", url, &ext).request()
 }
 
-func (s *session) Head(url string, ext ...ext.Ext) *Response {
+func (s *session) Head(url string, ext ...types.Ext) *Response {
 	return s.init("Head", url, &ext).request()
 }
 
-func (s *session) Options(url string, ext ...ext.Ext) *Response {
+func (s *session) Options(url string, ext ...types.Ext) *Response {
 	return s.init("Option", url, &ext).request()
 }

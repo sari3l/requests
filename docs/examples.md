@@ -7,12 +7,13 @@ import (
     "fmt"
     "github.com/sari3l/requests"
     "github.com/sari3l/requests/ext"
+    "github.com/sari3l/requests/types"
 )
 
 func main() {
     // Requests Bearer Token
     auth := ext.BasicAuth{Username: "o94KGT3MlbT...", Password: "fNbL2ukEGyvuGSM7bAuoq..."}
-    data := ext.Dict{
+    data := types.Dict{
         "grant_type": "client_credentials",
     }
     resp := requests.Post("https://api.twitter.com/oauth2/token", ext.Auth(auth), ext.Data(data))
@@ -60,13 +61,14 @@ import (
     "github.com/CUCyber/ja3transport"
     "github.com/sari3l/requests"
     "github.com/sari3l/requests/ext"
+    "github.com/sari3l/requests/types"
     "net/http"
     "reflect"
 )
 
 func main() {
-    hooks := ext.HooksDict{
-        "client": []ext.Hook{modifyJa3Fingerprint},
+    hooks := types.HooksDict{
+        "client": []types.Hook{modifyJa3Fingerprint},
     }
 
     resp := requests.Get("https://ja3er.com/json", ext.Hooks(hooks))
@@ -92,13 +94,14 @@ import (
     "github.com/sari3l/requests"
     "github.com/sari3l/requests/ext"
     "github.com/sari3l/requests/tools"
+    "github.com/sari3l/requests/types"
 )
 
 func main() {
     ja3Hook := tools.HookClientJA3Func("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53-10,0-23-65281-10-11-35-16-5-13-18-51-45-43-27-21,29-23-24,0")
 
-    hooks := ext.HooksDict{
-        "client": []ext.Hook{ja3Hook},
+    hooks := types.HooksDict{
+        "client": []types.Hook{ja3Hook},
     }
 
     resp := requests.Get("https://ja3er.com/json", ext.Hooks(hooks))

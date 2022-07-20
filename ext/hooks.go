@@ -1,29 +1,28 @@
 package ext
 
-type HooksDict map[string][]Hook
-type Hook func(object any) (error, any)
+import "github.com/sari3l/requests/types"
 
 var defaultHooksList = []string{"request", "client", "response"}
 
-func DefaultHooks() HooksDict {
-	hooks := HooksDict{}
+func DefaultHooks() types.HooksDict {
+	hooks := types.HooksDict{}
 	for _, v := range defaultHooksList {
-		hooks[v] = make([]Hook, 0)
+		hooks[v] = make([]types.Hook, 0)
 	}
 	return hooks
 }
 
-func RegisterHook(hooksDict *HooksDict, key string, hook Hook) error {
+func RegisterHook(hooksDict *types.HooksDict, key string, hook types.Hook) error {
 	hooks := *hooksDict
 	if hooks[key] != nil {
 		hooks[key] = append(hooks[key], hook)
 	} else {
-		hooks[key] = []Hook{hook}
+		hooks[key] = []types.Hook{hook}
 	}
 	return nil
 }
 
-func DisPatchHook(key string, hooks HooksDict, data any) any {
+func DisPatchHook(key string, hooks types.HooksDict, data any) any {
 	if hooks[key] != nil {
 		for _, hook := range hooks[key] {
 			err, _hookData := hook(data)

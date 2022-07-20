@@ -3,7 +3,7 @@ package tools
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sari3l/requests/ext"
+	"github.com/sari3l/requests/types"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 	"io/ioutil"
@@ -43,8 +43,8 @@ func CovertStructToJson(obj any) map[string]any {
 
 // ConvertStructToDict 需要结构体字段Tag设置为 `dict:"目标键名"` 或 `dict:"目标键名,omitempty"`
 // 如 Text string `dict:"text,omitempty"`
-func ConvertStructToDict(obj any) ext.Dict {
-	dict := ext.Dict{}
+func ConvertStructToDict(obj any) types.Dict {
+	dict := types.Dict{}
 	ref := reflect.ValueOf(obj)
 	for i := 0; i < ref.NumField(); i++ {
 		tagOpt := ref.Type().Field(i).Tag.Get("dict")

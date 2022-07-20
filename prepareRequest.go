@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/sari3l/requests/ext"
+	"github.com/sari3l/requests/types"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -22,24 +23,24 @@ type prepareRequest struct {
 	headers *http.Header
 	cookies []*http.Cookie
 	body    *io.ReadCloser
-	hooks   ext.HooksDict
+	hooks   types.HooksDict
 }
 
-func PrepareRequest(method string, url string, params ext.Dict, headers ext.Dict, cookies ext.Dict, data ext.Dict, json map[string]any, files ext.Dict, stream io.Reader, auth ext.AuthInter, hooks ext.HooksDict) (error, *prepareRequest) {
+func PrepareRequest(method string, url string, params types.Dict, headers types.Dict, cookies types.Dict, data types.Dict, json map[string]any, files types.Dict, stream io.Reader, auth types.AuthInter, hooks types.HooksDict) (error, *prepareRequest) {
 	var err error
-
 	_prepareRequest := new(prepareRequest)
 	_prepareRequest.prepareMethod(method)
+	_prepareRequest.headers = defaultHeaders() // header 手动输入优先级更高
 	if err = _prepareRequest.prepareUrl(url, params); err != nil {
+		return err, nil
+	}
+	if err = _prepareRequest.prepareBody(data, files, json, stream); err != nil {
 		return err, nil
 	}
 	if err = _prepareRequest.prepareHeaders(headers); err != nil {
 		return err, nil
 	}
 	if err = _prepareRequest.prepareCookies(cookies); err != nil {
-		return err, nil
-	}
-	if err = _prepareRequest.prepareBody(data, files, json, stream); err != nil {
 		return err, nil
 	}
 	if err = _prepareRequest.prepareAuth(auth); err != nil {
@@ -58,7 +59,7 @@ func (prep *prepareRequest) prepareMethod(method string) {
 	prep.method = strings.ToUpper(method)
 }
 
-func (prep *prepareRequest) prepareUrl(urlRaw string, params ext.Dict) error {
+func (prep *prepareRequest) prepareUrl(urlRaw string, params types.Dict) error {
 	urlRaw = strings.Trim(urlRaw, " ")
 	if strings.Contains(urlRaw, ":") && strings.ToLower(urlRaw[:4]) != "http" {
 		prep.url = urlRaw
@@ -94,22 +95,19 @@ func (prep *prepareRequest) prepareUrl(urlRaw string, params ext.Dict) error {
 	return nil
 }
 
-func (prep *prepareRequest) prepareHeaders(headers ext.Dict) error {
-	headersTmp := defaultHeaders()
+func (prep *prepareRequest) prepareHeaders(headers types.Dict) error {
 	if headers != nil {
 		for k, v := range headers {
 			if err := checkHeaderValidity(k, v); err != nil {
 				return err
 			}
-			headersTmp.Set(k, v)
+			prep.headers.Set(k, v)
 		}
 	}
-
-	prep.headers = headersTmp
 	return nil
 }
 
-func (prep *prepareRequest) prepareCookies(cookies ext.Dict) error {
+func (prep *prepareRequest) prepareCookies(cookies types.Dict) error {
 	if cookies == nil {
 		return nil
 	}
@@ -125,7 +123,7 @@ func (prep *prepareRequest) prepareCookies(cookies ext.Dict) error {
 	return nil
 }
 
-func (prep *prepareRequest) prepareBody(data, files ext.Dict, json map[string]any, stream io.Reader) error {
+func (prep *prepareRequest) prepareBody(data, files types.Dict, json map[string]any, stream io.Reader) error {
 	var closer io.ReadCloser
 	contentType := ""
 	contentLength := 0
@@ -192,14 +190,14 @@ func (prep *prepareRequest) prepareBody(data, files ext.Dict, json map[string]an
 	return nil
 }
 
-func (prep *prepareRequest) prepareAuth(auth ext.AuthInter) error {
+func (prep *prepareRequest) prepareAuth(auth types.AuthInter) error {
 	if auth == nil {
 		return nil
 	}
 	return auth.Format(prep.headers)
 }
 
-func (prep *prepareRequest) prepareHooks(hooks ext.HooksDict) {
+func (prep *prepareRequest) prepareHooks(hooks types.HooksDict) {
 	if prep.hooks == nil {
 		prep.hooks = ext.DefaultHooks()
 	}

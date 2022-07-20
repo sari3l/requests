@@ -1,108 +1,87 @@
 package ext
 
 import (
+	"github.com/sari3l/requests/types"
 	"io"
 )
 
-type Ext func(ep *ExtensionPackage)
-type Dict map[string]string
-type List []string
-
-type ExtensionPackage struct {
-	Method         string // 隐性参数
-	Url            string // 直传参数
-	Data           Dict   // 以下均为扩展参数
-	Params         Dict
-	Proxy          string
-	Timeout        int
-	Headers        Dict
-	Cookies        Dict
-	AllowRedirects bool
-	Json           map[string]any
-	Files          Dict
-	Stream         io.Reader
-	Auth           AuthInter
-	Hooks          HooksDict
-	Verify         bool
-}
-
-func AllowRedirects(allowRedirects bool) Ext {
-	return func(ep *ExtensionPackage) {
+func AllowRedirects(allowRedirects bool) types.Ext {
+	return func(ep *types.ExtensionPackage) {
 		ep.AllowRedirects = allowRedirects
 	}
 }
 
-func Auth(auth AuthInter) Ext {
-	return func(ep *ExtensionPackage) {
+func Auth(auth types.AuthInter) types.Ext {
+	return func(ep *types.ExtensionPackage) {
 		ep.Auth = auth
 	}
 }
 
-func Cookies(cookies Dict) Ext {
-	return func(ep *ExtensionPackage) {
+func Cookies(cookies types.Dict) types.Ext {
+	return func(ep *types.ExtensionPackage) {
 		ep.Cookies = cookies
 	}
 }
 
-func Data(data Dict) Ext {
-	return func(ep *ExtensionPackage) {
+func Data(data types.Dict) types.Ext {
+	return func(ep *types.ExtensionPackage) {
 		ep.Data = data
 	}
 }
 
-func Files(files Dict) Ext {
-	return func(ep *ExtensionPackage) {
+func Files(files types.Dict) types.Ext {
+	return func(ep *types.ExtensionPackage) {
 		ep.Files = files
 	}
 }
 
-func Headers(headers Dict) Ext {
-	return func(ep *ExtensionPackage) {
+func Headers(headers types.Dict) types.Ext {
+	return func(ep *types.ExtensionPackage) {
 		ep.Headers = headers
 	}
 }
 
-func Hooks(hooksDict HooksDict) Ext {
+func Hooks(hooksDict types.HooksDict) types.Ext {
 	if len(hooksDict) == 0 {
 		hooksDict = DefaultHooks()
 	}
-	return func(ep *ExtensionPackage) {
+	return func(ep *types.ExtensionPackage) {
 		ep.Hooks = hooksDict
 	}
 }
 
-func Json(json map[string]any) Ext {
-	return func(ep *ExtensionPackage) {
+func Json(json map[string]any) types.Ext {
+	return func(ep *types.ExtensionPackage) {
 		ep.Json = json
 	}
 }
 
-func Params(params Dict) Ext {
-	return func(ep *ExtensionPackage) {
+func Params(params types.Dict) types.Ext {
+	return func(ep *types.ExtensionPackage) {
 		ep.Params = params
 	}
 }
 
-func Proxy(proxy string) Ext {
-	return func(ep *ExtensionPackage) {
+func Proxy(proxy string) types.Ext {
+	return func(ep *types.ExtensionPackage) {
 		ep.Proxy = proxy
 	}
 }
 
-func Stream(stream io.Reader) Ext {
-	return func(ep *ExtensionPackage) {
+func Stream(stream io.Reader) types.Ext {
+	return func(ep *types.ExtensionPackage) {
 		ep.Stream = stream
 	}
 }
 
-func Timeout(timeout int) Ext {
-	return func(ep *ExtensionPackage) {
+func Timeout(timeout int) types.Ext {
+	return func(ep *types.ExtensionPackage) {
 		ep.Timeout = timeout
 	}
 }
 
-func Verify(verify bool) Ext {
-	return func(ep *ExtensionPackage) {
+func Verify(verify bool) types.Ext {
+	return func(ep *types.ExtensionPackage) {
 		ep.Verify = verify
 
 	}
