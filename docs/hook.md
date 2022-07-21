@@ -44,11 +44,12 @@ import (
     "fmt"
     "github.com/sari3l/requests"
     "github.com/sari3l/requests/ext"
+    "github.com/sari3l/requests/types"
 )
 
 func main() {
-    hooks := ext.HooksDict{
-        "response": []ext.Hook{printHeaders},
+    hooks := types.HooksDict{
+        "response": []types.Hook{printHeaders},
     }
     resp := requests.Get("https://www.google.com", ext.Hooks(hooks))
     fmt.Println(resp.Content)

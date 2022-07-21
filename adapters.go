@@ -68,7 +68,9 @@ func (a *adapter) buildResponse(req *http.Request, resp *http.Response) (error, 
 	defer resp.Body.Close()
 
 	encoding := resp.Header.Get("Content-Encoding")
-	_ = decompressRaw(&raw, encoding)
+	if err = decompressRaw(&raw, encoding); err != nil {
+		log.Println(err)
+	}
 
 	r := &Response{
 		Ok:       resp.StatusCode == 200,
