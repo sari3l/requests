@@ -11,16 +11,16 @@ import (
 )
 
 func main() {
-    // Requests Bearer Token
+    // Requests Bearer Token 
     auth := ext.BasicAuth{Username: "o94KGT3MlbT...", Password: "fNbL2ukEGyvuGSM7bAuoq..."}
     data := types.Dict{
         "grant_type": "client_credentials",
     }
     resp := requests.Post("https://api.twitter.com/oauth2/token", ext.Auth(auth), ext.Data(data))
-    fmt.Println(resp.Json())
 
     // Requests with Twitter API 2.0
-    if resp.Ok {
+    if resp != nil && resp.Ok {
+        fmt.Println(resp.Json())
         token := ext.BearerAuth{Token: resp.Json().Get("access_token").Str}
         resp2 := requests.Get("https://api.twitter.com/2/users/by/username/Sariel_D", ext.Auth(token))
         fmt.Println(resp2.Json())

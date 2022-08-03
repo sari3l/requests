@@ -1,10 +1,10 @@
 package requests
 
 import (
-	"fmt"
 	"github.com/sari3l/requests/ext"
 	"github.com/sari3l/requests/types"
 	"io/ioutil"
+	"log"
 	"net/http"
 	nUrl "net/url"
 	"strconv"
@@ -50,7 +50,7 @@ func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.Ho
 
 	err, response := a.buildResponse(req.Request, resp)
 	if err != nil {
-		fmt.Printf("%v", err)
+		log.Fatalln(err)
 		return err, nil
 	}
 
@@ -68,7 +68,9 @@ func (a *adapter) buildResponse(req *http.Request, resp *http.Response) (error, 
 	defer resp.Body.Close()
 
 	encoding := resp.Header.Get("Content-Encoding")
-	_ = decompressRaw(&raw, encoding)
+	if err = decompressRaw(&raw, encoding); err != nil {
+		log.Println(err)
+	}
 
 	r := &Response{
 		Ok:       resp.StatusCode == 200,

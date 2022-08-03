@@ -16,6 +16,34 @@
 go get github.com/sari3l/requests
 ```
 
+## Quick Demo
+
+```golang
+import (
+    "fmt"
+    "github.com/sari3l/requests"
+    "github.com/sari3l/requests/ext"
+    "github.com/sari3l/requests/types"
+)
+
+func main() {
+    // Requests Bearer Token
+    auth := ext.BasicAuth{Username: "o94KGT3MlbT...", Password: "fNbL2ukEGyvuGSM7bAuoq..."}
+    data := types.Dict{
+        "grant_type": "client_credentials",
+    }
+    resp := requests.Post("https://api.twitter.com/oauth2/token", ext.Auth(auth), ext.Data(data))
+    
+    // Requests with Twitter API 2.0
+    if resp != nil && resp.Ok {
+        fmt.Println(resp.Json())
+        token := ext.BearerAuth{Token: resp.Json().Get("access_token").Str}
+        resp2 := requests.Get("https://api.twitter.com/2/users/by/username/Sariel_D", ext.Auth(token))
+        fmt.Println(resp2.Json())
+    }
+}
+```
+
 ## 链接
 
 - [说明文档](https://requests.sari3l.com)

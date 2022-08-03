@@ -3,7 +3,7 @@
 由于golang不支持可选参数，所以此项目通过抽象参数为Func进行处理，下面仍以可选参数来介绍，但请勿混淆概念
 
 ```go
-type Ext func(ep *extensions?Package)
+type Ext func(ep *ExtensionPackage)
 ```
 
 目前支持的可选参数有

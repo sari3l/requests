@@ -7,6 +7,7 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 	"io/ioutil"
+	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -16,7 +17,7 @@ func ConvertGbkToUtf8(str string) string {
 	reader := transform.NewReader(strings.NewReader(str), simplifiedchinese.GBK.NewDecoder())
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
-		fmt.Print(err)
+		log.Fatalln(err)
 		return ""
 	}
 	return string(data)
@@ -26,7 +27,7 @@ func ConvertUtf8ToGbk(str string) string {
 	reader := transform.NewReader(strings.NewReader(str), simplifiedchinese.GBK.NewEncoder())
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
-		fmt.Print(err)
+		log.Fatalln(err)
 		return ""
 	}
 	return string(data)
