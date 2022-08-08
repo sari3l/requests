@@ -12,7 +12,7 @@ import (
 
 func main() {
     // Requests Bearer Token 
-    auth := ext.BasicAuth{Username: "o94KGT3MlbT...", Password: "fNbL2ukEGyvuGSM7bAuoq..."}
+    auth := types.BasicAuth{Username: "o94KGT3MlbT...", Password: "fNbL2ukEGyvuGSM7bAuoq..."}
     data := types.Dict{
         "grant_type": "client_credentials",
     }
@@ -21,7 +21,7 @@ func main() {
     // Requests with Twitter API 2.0
     if resp != nil && resp.Ok {
         fmt.Println(resp.Json())
-        token := ext.BearerAuth{Token: resp.Json().Get("access_token").Str}
+        token := types.BearerAuth{Token: resp.Json().Get("access_token").Str}
         resp2 := requests.Get("https://api.twitter.com/2/users/by/username/Sariel_D", ext.Auth(token))
         fmt.Println(resp2.Json())
     }
@@ -47,7 +47,7 @@ func main() {
     tr, _ := ja3transport.NewTransport("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53-10,0-23-65281-10-11-35-16-5-13-18-51-45-43-27-21,29-23-24,0")
     session.Client.Transport = tr
     resp := session.Send(prep)
-    fmt.Print(resp.Content)
+    fmt.Print(resp.Html)
 }
 ```
 

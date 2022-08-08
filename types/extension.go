@@ -1,19 +1,6 @@
 package types
 
-import (
-	"io"
-)
-
-type Dict map[string]string
-type List []string
-type Json map[string]any
-
-type Hook func(object any) (error, any)
-type HooksDict map[string][]Hook
-
-type AuthInter interface {
-	Format(p any) error
-}
+import "io"
 
 type Ext func(ep *ExtensionPackage)
 type ExtensionPackage struct {
@@ -32,4 +19,5 @@ type ExtensionPackage struct {
 	Auth           AuthInter
 	Hooks          HooksDict
 	Verify         bool
+	Render         bool
 }

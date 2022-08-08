@@ -50,7 +50,7 @@ func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.Ho
 
 	err, response := a.buildResponse(req.Request, resp)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 		return err, nil
 	}
 
@@ -76,7 +76,7 @@ func (a *adapter) buildResponse(req *http.Request, resp *http.Response) (error, 
 		Ok:       resp.StatusCode == 200,
 		Response: resp,
 		Raw:      raw,
-		Content:  string(raw),
+		Html:     string(raw),
 		cookies:  append(resp.Cookies(), req.Cookies()...),
 	}
 

@@ -60,18 +60,18 @@ fmt.Println(resp.StatusCode)
 
 Auth认证稍微有些特别，因为其多样性，所以其是以接口形式定义，具体实现为
 
-- ext.BasicAuth
-- ext.BearerAuth
+- types.BasicAuth
+- types.BearerAuth
 
 ```go
 var auth types.AuthInter
 var resp *requests.Response
 
-auth = ext.BasicAuth{Username: "test", Password: "test"}
+auth = types.BasicAuth{Username: "test", Password: "test"}
 resp = requests.Get("https://github.com", ext.Auth(auth))
-fmt.Println(resp.Content)
+fmt.Println(resp.Html)
 
-auth = ext.BearerAuth{Token: "test"}
+auth = types.BearerAuth{Token: "test"}
 resp = requests.Get("https://httpbin.org/bearer", ext.Auth(auth))
 fmt.Println(resp.Json())
 ```

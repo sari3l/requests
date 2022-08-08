@@ -39,11 +39,11 @@
 
 > func HookResponseGbkToUtf8(response any) (error, any)
 
-转换response.Content编码为UTF-8，需自行hook至`requests.Response`
+转换response.Html编码为UTF-8，需自行hook至`requests.Response`
 
 > func HookResponseUtf8ToGbk(response any) (error, any)
 
-转换response.Content编码为GBK，需自行hook至`requests.Response`
+转换response.Html编码为GBK，需自行hook至`requests.Response`
 
 ## Ja3
 

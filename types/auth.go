@@ -1,10 +1,14 @@
-package ext
+package types
 
 import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
 )
+
+type AuthInter interface {
+	Format(p any) error
+}
 
 type BasicAuth struct {
 	Username string

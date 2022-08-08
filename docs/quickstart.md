@@ -18,7 +18,7 @@ import (
 
 func main() {
     resp := requests.Get("https://github.com/")
-    fmt.Println(resp.Content)
+    fmt.Println(resp.Html)
 }
 ```
 
@@ -39,6 +39,6 @@ func main() {
     }
     
     resp := requests.Post("https://github.com/", ext.Cookies(cookies))
-    fmt.Println(resp.Content)
+    fmt.Println(resp.Html)
 }
 ```

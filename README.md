@@ -28,7 +28,7 @@ import (
 
 func main() {
     // Requests Bearer Token
-    auth := ext.BasicAuth{Username: "o94KGT3MlbT...", Password: "fNbL2ukEGyvuGSM7bAuoq..."}
+    auth := types.BasicAuth{Username: "o94KGT3MlbT...", Password: "fNbL2ukEGyvuGSM7bAuoq..."}
     data := types.Dict{
         "grant_type": "client_credentials",
     }
@@ -37,7 +37,7 @@ func main() {
     // Requests with Twitter API 2.0
     if resp != nil && resp.Ok {
         fmt.Println(resp.Json())
-        token := ext.BearerAuth{Token: resp.Json().Get("access_token").Str}
+        token := types.BearerAuth{Token: resp.Json().Get("access_token").Str}
         resp2 := requests.Get("https://api.twitter.com/2/users/by/username/Sariel_D", ext.Auth(token))
         fmt.Println(resp2.Json())
     }

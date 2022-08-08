@@ -8,7 +8,7 @@ import (
 func HookResponseGbkToUtf8(response any) (error, any) {
 	resp := response.(requests.Response)
 	respRef := reflect.ValueOf(&resp).Elem()
-	respContent := respRef.FieldByName("Content")
+	respContent := respRef.FieldByName("Html")
 	chineseContent := ConvertGbkToUtf8(respContent.String())
 	respContent.SetString(chineseContent)
 	return nil, resp
@@ -17,7 +17,7 @@ func HookResponseGbkToUtf8(response any) (error, any) {
 func HookResponseUtf8ToGbk(response any) (error, any) {
 	resp := response.(requests.Response)
 	respRef := reflect.ValueOf(&resp).Elem()
-	respContent := respRef.FieldByName("Content")
+	respContent := respRef.FieldByName("Html")
 	chineseContent := ConvertUtf8ToGbk(respContent.String())
 	respContent.SetString(chineseContent)
 	return nil, resp

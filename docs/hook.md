@@ -52,7 +52,7 @@ func main() {
         "response": []types.Hook{printHeaders},
     }
     resp := requests.Get("https://www.google.com", ext.Hooks(hooks))
-    fmt.Println(resp.Content)
+    fmt.Println(resp.Html)
 }
 
 func printHeaders(response any) (error, any) {

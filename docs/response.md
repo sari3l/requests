@@ -8,7 +8,7 @@ type Response struct {
     cookies []*http.Cookie
     Ok      bool
     Raw     []byte
-    Content string
+    Html    string
     History []*Response
     Time    int64
 }
@@ -22,9 +22,9 @@ type Response struct {
 
 返回完整Body内容
 
-## Content
+## HTML
 
-返回完整Body对应字符内容
+返回完整HTML字符内容
 
 ## History
 
@@ -36,7 +36,11 @@ type Response struct {
 
 ## Json()
 
-返回`gjson.Result`
+返回`*gjson.Result`
+
+## XPath()
+
+返回`*parser.XpathNode`
 
 ## Text()
 

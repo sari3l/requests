@@ -46,12 +46,12 @@ func (s *session) init(method string, url string, exts *[]types.Ext) *session {
 func (s *session) request() *Response {
 	err, prep := s.prepareRequest()
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 		return nil
 	}
 
 	if err = s.prepareClient(); err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 		return nil
 	}
 
@@ -86,7 +86,7 @@ func (s *session) Send(prep *prepareRequest) *Response {
 	// 后续根据协议，切换adapter
 	err, r := s.adapter.send(s.Client, prep, s.Hooks)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 		return nil
 	}
 	usedTime := time.Now().UnixMilli() - startTime

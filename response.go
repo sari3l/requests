@@ -1,6 +1,9 @@
 package requests
 
 import (
+	"context"
+	"github.com/chromedp/chromedp"
+	"github.com/sari3l/requests/parser"
 	"github.com/tidwall/gjson"
 	"golang.org/x/net/html"
 	"net/http"
@@ -13,22 +16,29 @@ type Response struct {
 	cookies []*http.Cookie
 	Ok      bool
 	Raw     []byte
-	Content string
+	Html    string
 	History []*Response
 	Time    int64
+	context *context.Context
+	closer  *func()
 }
 
-func (resp *Response) Json() gjson.Result {
+func (resp *Response) Json() *gjson.Result {
 	if resp == nil {
-		return gjson.Result{}
+		return nil
 	}
-	return gjson.Parse(resp.Content)
+	g := gjson.Parse(resp.Html)
+	return &g
+}
+
+func (resp *Response) XPath() *parser.XpathNode {
+	return parser.XpathParser(&resp.Html)
 }
 
 func (resp *Response) Text() string {
 	text := ""
 
-	domDoc := html.NewTokenizer(strings.NewReader(resp.Content))
+	domDoc := html.NewTokenizer(strings.NewReader(resp.Html))
 	previousStartToken := domDoc.Token()
 loopDom:
 	for {
@@ -68,7 +78,33 @@ func (resp *Response) ContentType() string {
 }
 
 func (resp *Response) URLs() []string {
-	links := linkRegexCompiled.FindAllString(resp.Content, -1)
+	links := linkRegexCompiled.FindAllString(resp.Html, -1)
 	originUrl := resp.Request.URL
 	return *processLinks(originUrl, &links)
+}
+
+// chromeless 页面渲染
+
+func (resp *Response) Render() error {
+	if resp.context == nil {
+		ctx, cancel := chromedp.NewContext(
+			context.Background(),
+		)
+		resp.context = &ctx
+		resp.closer = (*func())(&cancel)
+	}
+	err := chromedp.Run(*resp.context,
+		chromedp.Navigate(resp.Request.URL.String()),
+		chromedp.OuterHTML("html", &resp.Html, chromedp.ByQuery),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (resp *Response) Close() {
+	if resp.closer != nil {
+		(*resp.closer)()
+	}
 }
