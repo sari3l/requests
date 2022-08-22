@@ -50,7 +50,7 @@ func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.Ho
 
 	err, response := a.buildResponse(req.Request, resp)
 	if err != nil {
-		log.Println(err)
+		log.Fatalln(err)
 		return err, nil
 	}
 
@@ -69,7 +69,7 @@ func (a *adapter) buildResponse(req *http.Request, resp *http.Response) (error, 
 
 	encoding := resp.Header.Get("Content-Encoding")
 	if err = decompressRaw(&raw, encoding); err != nil {
-		log.Println(err)
+		log.Fatalln(err)
 	}
 
 	r := &Response{

@@ -6,6 +6,7 @@ require (
 	github.com/CUCyber/ja3transport v0.0.0-20201031204932-8a22ac8ab5d7
 	github.com/andybalholm/brotli v1.0.4
 	github.com/antchfx/xpath v1.2.1
+	github.com/chromedp/cdproto v0.0.0-20220725225757-5988d9195a6c
 	github.com/chromedp/chromedp v0.8.3
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/jinzhu/copier v0.3.5
@@ -15,7 +16,6 @@ require (
 )
 
 require (
-	github.com/chromedp/cdproto v0.0.0-20220725225757-5988d9195a6c // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect

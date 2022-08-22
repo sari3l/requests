@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
-	"errors"
 	"fmt"
 	"github.com/andybalholm/brotli"
 	"io/ioutil"
@@ -15,7 +14,7 @@ import (
 	"strings"
 )
 
-const Version = "v1.1.7"
+const Version = "v1.1.9"
 
 const DefaultTimeout = 5 // time.Second
 
@@ -24,13 +23,6 @@ var linkRegexCompiled = regexp.MustCompile(`(?:"|')(((?:[a-zA-Z]{1,10}://|//)[^"
 
 // gzip https://en.wikipedia.org/wiki/Gzip
 var gzipFlag = []byte{0x1f, 0x8b}
-
-func checkHeaderValidity(key, value string) error {
-	if !cleanHeaderRegexStr.MatchString(value) {
-		return errors.New(fmt.Sprintf("bad end of header %s", key))
-	}
-	return nil
-}
 
 func defaultHeaders() *http.Header {
 	headers := &http.Header{}

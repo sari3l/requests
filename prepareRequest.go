@@ -97,9 +97,7 @@ func (prep *prepareRequest) prepareUrl(urlRaw string, params types.Dict) error {
 func (prep *prepareRequest) prepareHeaders(headers types.Dict) error {
 	if headers != nil {
 		for k, v := range headers {
-			if err := checkHeaderValidity(k, v); err != nil {
-				return err
-			}
+			// 在 go/src/net/http/transport.go:504 -> roundTrip 有header头检查
 			prep.headers.Set(k, v)
 		}
 	}

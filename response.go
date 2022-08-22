@@ -2,25 +2,29 @@ package requests
 
 import (
 	"context"
+	"github.com/chromedp/cdproto/cdp"
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	"github.com/sari3l/requests/parser"
+	"github.com/sari3l/requests/types"
 	"github.com/tidwall/gjson"
 	"golang.org/x/net/html"
+	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 type Response struct {
 	*http.Response
+	Session *session
 	cookies []*http.Cookie
 	Ok      bool
 	Raw     []byte
 	Html    string
 	History []*Response
 	Time    int64
-	context *context.Context
-	closer  *func()
 }
 
 func (resp *Response) Json() *gjson.Result {
@@ -83,18 +87,28 @@ func (resp *Response) URLs() []string {
 	return *processLinks(originUrl, &links)
 }
 
-// chromeless 页面渲染
+// Render chromeless 页面渲染，后续考虑将 chromedp 作为tools接入了，提供更多可选项
+func (resp *Response) Render(useExtCookies bool) error {
+	var flags = make([]chromedp.ExecAllocatorOption, 0)
+	flags = append(flags,
+		chromedp.Flag("ignore-certificate-errors", !resp.Session.Verify),
+		chromedp.Flag("headless", true),
+		chromedp.ProxyServer(resp.Session.Proxy),
+		chromedp.UserAgent(resp.Request.UserAgent()),
+	)
 
-func (resp *Response) Render() error {
-	if resp.context == nil {
-		ctx, cancel := chromedp.NewContext(
-			context.Background(),
-		)
-		resp.context = &ctx
-		resp.closer = (*func())(&cancel)
-	}
-	err := chromedp.Run(*resp.context,
+	setCookiesAction := actionFuncSetCookies(useExtCookies, resp.Request.URL.Host, &resp.Session.Cookies, &resp.cookies)
+
+	opts := append(chromedp.DefaultExecAllocatorOptions[:], flags...)
+	chromeCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer cancel()
+	ctx, cancel := chromedp.NewContext(chromeCtx, chromedp.WithLogf(log.Printf))
+	defer cancel()
+	err := chromedp.Run(ctx,
+		setCookiesAction,
 		chromedp.Navigate(resp.Request.URL.String()),
+		// 这里添加睡眠时间
+		//chromedp.Sleep(10*time.Second),
 		chromedp.OuterHTML("html", &resp.Html, chromedp.ByQuery),
 	)
 	if err != nil {
@@ -103,8 +117,39 @@ func (resp *Response) Render() error {
 	return nil
 }
 
-func (resp *Response) Close() {
-	if resp.closer != nil {
-		(*resp.closer)()
+func actionFuncSetCookies(useExtCookies bool, domain string, cookiesDict *types.Dict, cookiesResp *[]*http.Cookie) chromedp.ActionFunc {
+	if useExtCookies || cookiesResp == nil || len(*cookiesResp) == 0 {
+		return func(ctx context.Context) error {
+			expr := cdp.TimeSinceEpoch(time.Now().Add(180 * 24 * time.Hour))
+			for name, value := range *cookiesDict {
+				err := network.SetCookie(name, value).
+					WithExpires(&expr).
+					WithDomain(domain).
+					WithPath("/").
+					WithHTTPOnly(false).
+					WithSecure(false).
+					Do(ctx)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	} else {
+		return func(ctx context.Context) error {
+			for _, cookie := range *cookiesResp {
+				err := network.SetCookie(cookie.Name, cookie.String()).
+					WithExpires((*cdp.TimeSinceEpoch)(&cookie.Expires)).
+					WithDomain(cookie.Domain).
+					WithPath(cookie.Path).
+					WithHTTPOnly(cookie.HttpOnly).
+					WithSecure(cookie.Secure).
+					Do(ctx)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
 	}
 }

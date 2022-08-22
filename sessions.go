@@ -45,18 +45,19 @@ func (s *session) init(method string, url string, exts *[]types.Ext) *session {
 }
 
 func (s *session) request() *Response {
-	err, prep := s.prepareRequest()
+	var err error
+	err, s.cacheRequest = s.prepareRequest()
 	if err != nil {
-		log.Println(err)
+		log.Fatalln(err)
 		return nil
 	}
 
 	if err = s.prepareClient(); err != nil {
-		log.Println(err)
+		log.Fatalln(err)
 		return nil
 	}
 
-	return s.Send(prep)
+	return s.Send(s.cacheRequest)
 }
 
 func (s *session) prepareRequest() (error, *prepareRequest) {
@@ -84,29 +85,31 @@ func (s *session) Send(prep *prepareRequest) *Response {
 
 	// 计时开机
 	startTime := time.Now().UnixMilli()
-	// 后续根据协议，切换adapter
-	err, r := s.adapter.send(s.Client, prep, s.Hooks)
+	// 后续根据协议，切换adapter（实际go对应client配置）
+	err, resp := s.adapter.send(s.Client, prep, s.Hooks)
 	if err != nil {
-		log.Println(err)
+		log.Fatalln(err)
 		return nil
 	}
 	usedTime := time.Now().UnixMilli() - startTime
 
-	r.Time = usedTime
+	resp.Time = usedTime
 
 	history := make([]*Response, 0)
 	if s.AllowRedirects {
 		s.cacheRequest = prep
-		err, history = s.resolveRedirects(r)
+		err, history = s.resolveRedirects(resp)
 	}
 
 	if len(history) > 0 {
-		history = append([]*Response{r}, history...)
-		r = history[len(history)-1]
-		r.History = history[:len(history)-1]
+		history = append([]*Response{resp}, history...)
+		resp = history[len(history)-1]
+		resp.History = history[:len(history)-1]
 	}
 
-	return r
+	resp.Session = s
+
+	return resp
 }
 
 func (s *session) RegisterHook(key string, hook types.Hook) error {
@@ -169,6 +172,12 @@ func (s *session) prepareProxy() error {
 			return err
 		}
 		s.Client.Transport.(*http.Transport).DialContext = dialer.(proxy.ContextDialer).DialContext
+	}
+	// 设置 ProxyConnectHeader
+	if ua := s.Headers["User-Agent"]; ua != "" {
+		header := &http.Header{}
+		header.Add("User-Agent", ua)
+		s.Client.Transport.(*http.Transport).ProxyConnectHeader = *header
 	}
 	return nil
 }
