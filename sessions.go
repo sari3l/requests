@@ -5,6 +5,7 @@ import (
 	"github.com/jinzhu/copier"
 	"github.com/sari3l/requests/ext"
 	"github.com/sari3l/requests/types"
+	"golang.org/x/net/proxy"
 	"log"
 	"net/http"
 	nUrl "net/url"
@@ -146,6 +147,8 @@ func (s *session) prepareRedirect() error {
 	return nil
 }
 
+// net/http/Transport 支持 http/https/socks5，如果使用其他协议则会转为 http
+// proxy支持socks/socks5h，为了简便只使用其处理socks5h
 func (s *session) prepareProxy() error {
 	if s.Proxy == "" {
 		return nil
@@ -154,12 +157,18 @@ func (s *session) prepareProxy() error {
 	if err != nil {
 		return err
 	}
-	if s.Client.Transport != nil {
+	if s.Client.Transport == nil {
+		s.Client.Transport = new(http.Transport)
+	}
+	switch _proxy.Scheme {
+	case "http", "https", "socks5":
 		s.Client.Transport.(*http.Transport).Proxy = http.ProxyURL(_proxy)
-	} else {
-		s.Client.Transport = &http.Transport{
-			Proxy: http.ProxyURL(_proxy),
+	case "socks5h":
+		dialer, err := proxy.FromURL(_proxy, nil)
+		if err != nil {
+			return err
 		}
+		s.Client.Transport.(*http.Transport).DialContext = dialer.(proxy.ContextDialer).DialContext
 	}
 	return nil
 }
