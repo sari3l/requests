@@ -4,9 +4,9 @@ import (
 	"context"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/sari3l/requests/parser"
-	"github.com/sari3l/requests/types"
 	"github.com/tidwall/gjson"
 	"golang.org/x/net/html"
 	"log"
@@ -93,11 +93,10 @@ func (resp *Response) Render(useExtCookies bool) error {
 	flags = append(flags,
 		chromedp.Flag("ignore-certificate-errors", !resp.Session.Verify),
 		chromedp.Flag("headless", true),
+		chromedp.Flag("enable-automation", false),
 		chromedp.ProxyServer(resp.Session.Proxy),
 		chromedp.UserAgent(resp.Request.UserAgent()),
 	)
-
-	setCookiesAction := actionFuncSetCookies(useExtCookies, resp.Request.URL.Host, &resp.Session.Cookies, &resp.cookies)
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:], flags...)
 	chromeCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
@@ -105,10 +104,11 @@ func (resp *Response) Render(useExtCookies bool) error {
 	ctx, cancel := chromedp.NewContext(chromeCtx, chromedp.WithLogf(log.Printf))
 	defer cancel()
 	err := chromedp.Run(ctx,
-		setCookiesAction,
+		actionBypassWebDriver(),
+		actionFuncSetCookies(useExtCookies, resp),
 		chromedp.Navigate(resp.Request.URL.String()),
 		// 这里添加睡眠时间
-		//chromedp.Sleep(10*time.Second),
+		//chromedp.Sleep(10000*time.Second),
 		chromedp.OuterHTML("html", &resp.Html, chromedp.ByQuery),
 	)
 	if err != nil {
@@ -117,14 +117,21 @@ func (resp *Response) Render(useExtCookies bool) error {
 	return nil
 }
 
-func actionFuncSetCookies(useExtCookies bool, domain string, cookiesDict *types.Dict, cookiesResp *[]*http.Cookie) chromedp.ActionFunc {
+// Chromedp 相关actions
+// chromelss 检测地址：https://intoli.com/blog/not-possible-to-block-chrome-headless/chrome-headless-test.html
+// 参考资料：https://github.com/chromedp/chromedp/issues/396#issuecomment-503351342
+
+func actionFuncSetCookies(useExtCookies bool, resp *Response) chromedp.ActionFunc {
+	cookiesDict := &resp.Session.Cookies
+	cookiesResp := &resp.cookies
+	domain := &resp.Request.URL.Host
 	if useExtCookies || cookiesResp == nil || len(*cookiesResp) == 0 {
 		return func(ctx context.Context) error {
 			expr := cdp.TimeSinceEpoch(time.Now().Add(180 * 24 * time.Hour))
 			for name, value := range *cookiesDict {
 				err := network.SetCookie(name, value).
 					WithExpires(&expr).
-					WithDomain(domain).
+					WithDomain(*domain).
 					WithPath("/").
 					WithHTTPOnly(false).
 					WithSecure(false).
@@ -151,5 +158,15 @@ func actionFuncSetCookies(useExtCookies bool, domain string, cookiesDict *types.
 			}
 			return nil
 		}
+	}
+}
+
+func actionBypassWebDriver() chromedp.ActionFunc {
+	return func(cxt context.Context) error {
+		_, err := page.AddScriptToEvaluateOnNewDocument("Object.defineProperty(navigator, 'webdriver', { get: () => false, });").Do(cxt)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 }

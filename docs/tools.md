@@ -25,6 +25,14 @@
 
 获取反射值字符串内容
 
+> func HookResponseGbkToUtf8(response any) (error, any)
+
+转换response.Html编码为UTF-8，需自行hook至`requests.Response`
+
+> func HookResponseUtf8ToGbk(response any) (error, any)
+
+转换response.Html编码为GBK，需自行hook至`requests.Response`
+
 ## Hash
 
 大多是比较常见的函数，具体不解释
@@ -35,18 +43,19 @@
 
 > func Md5(data []byte) string
 
-## Hooks
-
-> func HookResponseGbkToUtf8(response any) (error, any)
-
-转换response.Html编码为UTF-8，需自行hook至`requests.Response`
-
-> func HookResponseUtf8ToGbk(response any) (error, any)
-
-转换response.Html编码为GBK，需自行hook至`requests.Response`
-
 ## Ja3
 
-> func HookClientJA3Func(fingerprint string) ext.Hook
+> func HookClientJA3Func(fingerprint string) types.Hook
 
 接收指纹字符串，返回对应Hook函数，需自行hook至`http.client`
+
+## CloudFlare
+
+> func HookCloudFlareWorkFunc(workHost string, headers types.Dict) types.Hook
+
+可用于绕过cloudflare，利用work反代进行访问，自动设置以下两个header
+
+- Px-Host 会从原始请求中提取目标域名，可被显式覆盖
+- Px-IP 自动生成IPv4，可被显示覆盖
+
+最重要保证链接到 cloudflare 的出口是白的

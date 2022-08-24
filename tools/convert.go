@@ -3,6 +3,7 @@ package tools
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sari3l/requests"
 	"github.com/sari3l/requests/types"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
@@ -107,4 +108,22 @@ func ConvertValueToString(obj reflect.Value) string {
 	default:
 		return ""
 	}
+}
+
+func HookResponseGbkToUtf8(response any) (error, any) {
+	resp := response.(requests.Response)
+	respRef := reflect.ValueOf(&resp).Elem()
+	respContent := respRef.FieldByName("Html")
+	chineseContent := ConvertGbkToUtf8(respContent.String())
+	respContent.SetString(chineseContent)
+	return nil, resp
+}
+
+func HookResponseUtf8ToGbk(response any) (error, any) {
+	resp := response.(requests.Response)
+	respRef := reflect.ValueOf(&resp).Elem()
+	respContent := respRef.FieldByName("Html")
+	chineseContent := ConvertUtf8ToGbk(respContent.String())
+	respContent.SetString(chineseContent)
+	return nil, resp
 }
