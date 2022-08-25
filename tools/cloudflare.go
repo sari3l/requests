@@ -13,9 +13,9 @@ import (
 // 使用此 hook 最重要保证链接到 cloudflare 的出口是白的
 // 参考：https://github.com/jychp/cloudflare-bypass
 
-func HookCloudFlareWorkFunc(workHost string, headers types.Dict) types.Hook {
+func HookCloudFlareWorkerFunc(workerHost string, headers types.Dict) types.Hook {
 	return func(request any) (error, any) {
-		proxy, _ := url.Parse(workHost)
+		proxy, _ := url.Parse(workerHost)
 		reqUrl := request.(requests.Request).URL
 		if headers != nil {
 			if headers["Px-Host"] == "" {

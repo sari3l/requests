@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"github.com/pkg/errors"
 	"github.com/sari3l/requests/ext"
 	"github.com/sari3l/requests/types"
 	"io/ioutil"
@@ -25,8 +26,11 @@ func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.Ho
 
 	if prep.headers != nil {
 		req.Header = *prep.headers
-		if req.Header.Get("Content-Length") != "" {
-			length, err := strconv.ParseInt(req.Header.Get("Content-Length"), 10, 64)
+		if host := req.Header.Get("Host"); host != "" {
+			req.Host = host
+		}
+		if lens := req.Header.Get("Content-Length"); lens != "" {
+			length, err := strconv.ParseInt(lens, 10, 64)
 			if err == nil {
 				req.ContentLength = length
 			}
@@ -45,12 +49,13 @@ func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.Ho
 
 	resp, err := clientHandle.Do(requestHandle.Request)
 	if resp == nil || err != nil {
+		log.Println(errors.WithStack(err))
 		return err, nil
 	}
 
 	err, response := a.buildResponse(req.Request, resp)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(errors.WithStack(err))
 		return err, nil
 	}
 
@@ -63,13 +68,15 @@ func (a *adapter) buildResponse(req *http.Request, resp *http.Response) (error, 
 
 	raw, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		log.Println(errors.WithStack(err))
 		return err, nil
 	}
 	defer resp.Body.Close()
 
 	encoding := resp.Header.Get("Content-Encoding")
 	if err = decompressRaw(&raw, encoding); err != nil {
-		log.Fatalln(err)
+		log.Println(errors.WithStack(err))
+		return err, nil
 	}
 
 	r := &Response{

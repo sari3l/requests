@@ -5,6 +5,7 @@ import (
 	"fmt"
 	AXpath "github.com/antchfx/xpath"
 	"github.com/golang/groupcache/lru"
+	"github.com/pkg/errors"
 	"golang.org/x/net/html"
 	"log"
 	"strings"
@@ -24,7 +25,8 @@ func XpathParser(body *string) *XpathNode {
 	reader := strings.NewReader(*body)
 	node, err := html.Parse(reader)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(errors.WithStack(err))
+		return nil
 	}
 	return (*XpathNode)(node)
 }

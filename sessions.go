@@ -3,6 +3,7 @@ package requests
 import (
 	"crypto/tls"
 	"github.com/jinzhu/copier"
+	"github.com/pkg/errors"
 	"github.com/sari3l/requests/ext"
 	"github.com/sari3l/requests/types"
 	"golang.org/x/net/proxy"
@@ -22,7 +23,9 @@ type session struct {
 func Session(timeout int, proxy string, redirect bool, verify bool) *session {
 	s := &session{
 		adapter: &adapter{},
-		Client:  &http.Client{},
+		Client: &http.Client{
+			Transport: new(http.Transport),
+		},
 	}
 
 	s.Timeout = timeout
@@ -48,12 +51,12 @@ func (s *session) request() *Response {
 	var err error
 	err, s.cacheRequest = s.prepareRequest()
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(errors.WithStack(err))
 		return nil
 	}
 
 	if err = s.prepareClient(); err != nil {
-		log.Fatalln(err)
+		log.Println(errors.WithStack(err))
 		return nil
 	}
 
@@ -88,7 +91,7 @@ func (s *session) Send(prep *prepareRequest) *Response {
 	// 后续根据协议，切换adapter（实际go对应client配置）
 	err, resp := s.adapter.send(s.Client, prep, s.Hooks)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(errors.WithStack(err))
 		return nil
 	}
 	usedTime := time.Now().UnixMilli() - startTime
@@ -137,6 +140,9 @@ func (s *session) resolveRedirects(resp *Response) (error, []*Response) {
 		redirectPrep.cookies = resp.Cookies()
 		s.AllowRedirects = false
 		resp = s.Send(redirectPrep)
+		if resp == nil {
+			break
+		}
 		url = resp.Header.Get("Location")
 		history = append(history, resp)
 	}
@@ -159,9 +165,6 @@ func (s *session) prepareProxy() error {
 	_proxy, err := nUrl.Parse(s.Proxy)
 	if err != nil {
 		return err
-	}
-	if s.Client.Transport == nil {
-		s.Client.Transport = new(http.Transport)
 	}
 	switch _proxy.Scheme {
 	case "http", "https", "socks5":

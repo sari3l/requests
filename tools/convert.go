@@ -18,7 +18,7 @@ func ConvertGbkToUtf8(str string) string {
 	reader := transform.NewReader(strings.NewReader(str), simplifiedchinese.GBK.NewDecoder())
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 		return ""
 	}
 	return string(data)
@@ -28,7 +28,7 @@ func ConvertUtf8ToGbk(str string) string {
 	reader := transform.NewReader(strings.NewReader(str), simplifiedchinese.GBK.NewEncoder())
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 		return ""
 	}
 	return string(data)

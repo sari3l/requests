@@ -10,6 +10,7 @@ require (
 	github.com/chromedp/chromedp v0.8.3
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/jinzhu/copier v0.3.5
+	github.com/pkg/errors v0.9.1
 	github.com/tidwall/gjson v1.14.1
 	golang.org/x/net v0.0.0-20220531201128-c960675eff93
 	golang.org/x/text v0.3.7
