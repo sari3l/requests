@@ -51,12 +51,12 @@ func (s *session) request() *Response {
 	var err error
 	err, s.cacheRequest = s.prepareRequest()
 	if err != nil {
-		log.Println(errors.WithStack(err))
+		log.Printf("%+v\n", errors.WithStack(err))
 		return nil
 	}
 
 	if err = s.prepareClient(); err != nil {
-		log.Println(errors.WithStack(err))
+		log.Printf("%+v\n", errors.WithStack(err))
 		return nil
 	}
 
@@ -84,14 +84,11 @@ func (s *session) prepareClient() error {
 }
 
 func (s *session) Send(prep *prepareRequest) *Response {
-	var err error
-
 	// 计时开机
 	startTime := time.Now().UnixMilli()
 	// 后续根据协议，切换adapter（实际go对应client配置）
-	err, resp := s.adapter.send(s.Client, prep, s.Hooks)
-	if err != nil {
-		log.Println(errors.WithStack(err))
+	resp := s.adapter.send(s.Client, prep, s.Hooks)
+	if resp == nil {
 		return nil
 	}
 	usedTime := time.Now().UnixMilli() - startTime
@@ -101,7 +98,7 @@ func (s *session) Send(prep *prepareRequest) *Response {
 	history := make([]*Response, 0)
 	if s.AllowRedirects {
 		s.cacheRequest = prep
-		err, history = s.resolveRedirects(resp)
+		history = s.resolveRedirects(resp)
 	}
 
 	if len(history) > 0 {
@@ -122,7 +119,7 @@ func (s *session) RegisterHook(key string, hook types.Hook) error {
 	return ext.RegisterHook(&s.Hooks, key, hook)
 }
 
-func (s *session) resolveRedirects(resp *Response) (error, []*Response) {
+func (s *session) resolveRedirects(resp *Response) []*Response {
 	var err error
 	history := make([]*Response, 0)
 	url := resp.Header.Get("Location")
@@ -135,7 +132,8 @@ func (s *session) resolveRedirects(resp *Response) (error, []*Response) {
 		redirectPrep := &prepareRequest{}
 		_ = copier.CopyWithOption(&redirectPrep, &s.cacheRequest, copier.Option{IgnoreEmpty: true, DeepCopy: true})
 		if err = redirectPrep.prepareUrl(url, nil); err != nil {
-			return err, history
+			log.Printf("%+v\n", errors.WithStack(err))
+			return history
 		}
 		redirectPrep.cookies = resp.Cookies()
 		s.AllowRedirects = false
@@ -146,7 +144,7 @@ func (s *session) resolveRedirects(resp *Response) (error, []*Response) {
 		url = resp.Header.Get("Location")
 		history = append(history, resp)
 	}
-	return nil, history
+	return history
 }
 
 func (s *session) prepareRedirect() error {

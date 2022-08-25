@@ -25,7 +25,7 @@ func XpathParser(body *string) *XpathNode {
 	reader := strings.NewReader(*body)
 	node, err := html.Parse(reader)
 	if err != nil {
-		log.Println(errors.WithStack(err))
+		log.Printf("%+v\n", errors.WithStack(err))
 		return nil
 	}
 	return (*XpathNode)(node)

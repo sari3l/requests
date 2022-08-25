@@ -198,7 +198,7 @@ fmt.Println(resp.Json())
 
 > 中间代理
 
-与python-requests中proxy不同，`net.http.Transport.Proxy`只支持单条`url.URL`，所以需要自行确认代理协议，默认支持`http(s)`、`socks(5)`
+与python-requests中proxy不同，`net.http.Transport.Proxy`只支持单条`url.URL`，所以需要自行确认代理协议，默认支持`http(s)`、`socks5(h)`
 
 ```go
 resp := requests.Get("https://github.com/", ext.Proxy("http://127.0.0.1:8080"))

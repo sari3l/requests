@@ -49,6 +49,11 @@ func ConvertStructToDict(obj any) types.Dict {
 	dict := types.Dict{}
 	ref := reflect.ValueOf(obj)
 	for i := 0; i < ref.NumField(); i++ {
+		// Field首字母小写直接忽略
+		firstChar := int(ref.Type().Field(i).Name[0])
+		if !(firstChar >= 65 && firstChar <= 90) {
+			continue
+		}
 		tagOpt := ref.Type().Field(i).Tag.Get("dict")
 		if tagOpt == "" {
 			continue
@@ -63,7 +68,9 @@ func ConvertStructToDict(obj any) types.Dict {
 			tagName = tagOpt
 		}
 		var key string
-		if tagName == "" {
+		if tagName == "-" {
+			continue
+		} else if tagName == "" {
 			key = ref.Type().Field(i).Name
 		} else {
 			key = tagName

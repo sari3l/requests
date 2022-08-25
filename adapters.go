@@ -16,7 +16,7 @@ import (
 type adapter struct {
 }
 
-func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.HooksDict) (error, *Response) {
+func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.HooksDict) *Response {
 	req := &Request{Request: &http.Request{Proto: "HTTP/1.1"}}
 
 	req.Method = prep.method
@@ -49,34 +49,33 @@ func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.Ho
 
 	resp, err := clientHandle.Do(requestHandle.Request)
 	if resp == nil || err != nil {
-		log.Println(errors.WithStack(err))
-		return err, nil
+		log.Printf("%+v\n", errors.WithStack(err))
+		return nil
 	}
 
-	err, response := a.buildResponse(req.Request, resp)
-	if err != nil {
-		log.Println(errors.WithStack(err))
-		return err, nil
+	response := a.buildResponse(req.Request, resp)
+	if response == nil {
+		return nil
 	}
 
 	responseHandle := ext.DisPatchHook("response", hooks, *response).(Response)
 
-	return nil, &responseHandle
+	return &responseHandle
 }
 
-func (a *adapter) buildResponse(req *http.Request, resp *http.Response) (error, *Response) {
+func (a *adapter) buildResponse(req *http.Request, resp *http.Response) *Response {
 
 	raw, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println(errors.WithStack(err))
-		return err, nil
+		log.Printf("%+v\n", errors.WithStack(err))
+		return nil
 	}
 	defer resp.Body.Close()
 
 	encoding := resp.Header.Get("Content-Encoding")
 	if err = decompressRaw(&raw, encoding); err != nil {
-		log.Println(errors.WithStack(err))
-		return err, nil
+		log.Printf("%+v\n", errors.WithStack(err))
+		return nil
 	}
 
 	r := &Response{
@@ -87,5 +86,5 @@ func (a *adapter) buildResponse(req *http.Request, resp *http.Response) (error, 
 		cookies:  append(resp.Cookies(), req.Cookies()...),
 	}
 
-	return nil, r
+	return r
 }

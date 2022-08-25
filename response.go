@@ -6,6 +6,7 @@ import (
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
+	"github.com/pkg/errors"
 	"github.com/sari3l/requests/parser"
 	"github.com/tidwall/gjson"
 	"golang.org/x/net/html"
@@ -14,6 +15,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unsafe"
 )
 
 type Response struct {
@@ -87,78 +89,99 @@ func (resp *Response) URLs() []string {
 	return *processLinks(originUrl, &links)
 }
 
-// Render chromeless 页面渲染，后续考虑将 chromedp 作为tools接入了，提供更多可选项
-func (resp *Response) Render(useExtCookies bool) error {
-	var flags = make([]chromedp.ExecAllocatorOption, 0)
-	flags = append(flags,
+// render chromeless 页面渲染
+func (resp *Response) render(customFlags []chromedp.ExecAllocatorOption, tasks ...chromedp.Action) {
+	var flags = []chromedp.ExecAllocatorOption{
 		chromedp.Flag("ignore-certificate-errors", !resp.Session.Verify),
 		chromedp.Flag("headless", true),
 		chromedp.Flag("enable-automation", false),
 		chromedp.ProxyServer(resp.Session.Proxy),
 		chromedp.UserAgent(resp.Request.UserAgent()),
-	)
+	}
+	flags = append(flags, customFlags...)
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:], flags...)
 	chromeCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	defer cancel()
 	ctx, cancel := chromedp.NewContext(chromeCtx, chromedp.WithLogf(log.Printf))
 	defer cancel()
-	err := chromedp.Run(ctx,
+	actions := []chromedp.Action{
 		actionBypassWebDriver(),
-		actionFuncSetCookies(useExtCookies, resp),
+		actionFuncSetCookies(resp),
 		chromedp.Navigate(resp.Request.URL.String()),
-		// 这里添加睡眠时间
-		//chromedp.Sleep(10000*time.Second),
-		chromedp.OuterHTML("html", &resp.Html, chromedp.ByQuery),
-	)
-	if err != nil {
-		return err
 	}
-	return nil
+	for _, task := range tasks {
+		actions = append(actions, task)
+	}
+	err := chromedp.Run(ctx, actions...)
+	if err != nil {
+		log.Println(errors.WithStack(err))
+	}
+}
+
+func (resp *Response) Render() {
+	resp.render(nil, chromedp.Tasks{
+		chromedp.OuterHTML("html", &resp.Html, chromedp.ByQuery),
+	})
+}
+
+// Snapshot quality: false->jpeg | true->png
+func (resp *Response) Snapshot(png bool) *[]byte {
+	var buf = new([]byte)
+	quality := int(*(*int8)(unsafe.Pointer(&png))) * 100
+	resp.render(nil, chromedp.Tasks{
+		chromedp.FullScreenshot(buf, quality),
+	})
+	return buf
+}
+
+// CustomRender 支持各类Action接口实现
+func (resp *Response) CustomRender(flags []chromedp.ExecAllocatorOption, actions ...chromedp.Action) {
+	resp.render(flags, actions...)
 }
 
 // Chromedp 相关actions
 // chromelss 检测地址：https://intoli.com/blog/not-possible-to-block-chrome-headless/chrome-headless-test.html
 // 参考资料：https://github.com/chromedp/chromedp/issues/396#issuecomment-503351342
 
-func actionFuncSetCookies(useExtCookies bool, resp *Response) chromedp.ActionFunc {
+func actionFuncSetCookies(resp *Response) chromedp.ActionFunc {
 	cookiesDict := &resp.Session.Cookies
-	cookiesResp := &resp.cookies
 	domain := &resp.Request.URL.Host
-	if useExtCookies || cookiesResp == nil || len(*cookiesResp) == 0 {
-		return func(ctx context.Context) error {
-			expr := cdp.TimeSinceEpoch(time.Now().Add(180 * 24 * time.Hour))
-			for name, value := range *cookiesDict {
-				err := network.SetCookie(name, value).
-					WithExpires(&expr).
-					WithDomain(*domain).
-					WithPath("/").
-					WithHTTPOnly(false).
-					WithSecure(false).
-					Do(ctx)
-				if err != nil {
-					return err
-				}
+	//cookiesResp := &resp.cookies
+	//if useExtCookies || cookiesResp == nil || len(*cookiesResp) == 0 {
+	return func(ctx context.Context) error {
+		expr := cdp.TimeSinceEpoch(time.Now().Add(180 * 24 * time.Hour))
+		for name, value := range *cookiesDict {
+			err := network.SetCookie(name, value).
+				WithExpires(&expr).
+				WithDomain(*domain).
+				WithPath("/").
+				WithHTTPOnly(false).
+				WithSecure(false).
+				Do(ctx)
+			if err != nil {
+				return err
 			}
-			return nil
 		}
-	} else {
-		return func(ctx context.Context) error {
-			for _, cookie := range *cookiesResp {
-				err := network.SetCookie(cookie.Name, cookie.String()).
-					WithExpires((*cdp.TimeSinceEpoch)(&cookie.Expires)).
-					WithDomain(cookie.Domain).
-					WithPath(cookie.Path).
-					WithHTTPOnly(cookie.HttpOnly).
-					WithSecure(cookie.Secure).
-					Do(ctx)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		}
+		return nil
 	}
+	//} else {
+	//return func(ctx context.Context) error {
+	//	for _, cookie := range *cookiesResp {
+	//		err := network.SetCookie(cookie.Name, cookie.String()).
+	//			WithExpires((*cdp.TimeSinceEpoch)(&cookie.Expires)).
+	//			WithDomain(cookie.Domain).
+	//			WithPath(cookie.Path).
+	//			WithHTTPOnly(cookie.HttpOnly).
+	//			WithSecure(cookie.Secure).
+	//			Do(ctx)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//	return nil
+	//}
+	//}
 }
 
 func actionBypassWebDriver() chromedp.ActionFunc {

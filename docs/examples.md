@@ -124,7 +124,6 @@ import (
 
 func main() {
     headers := types.Dict {
-        "Host": "breached.to",
         "Pragma": "no-cache",
         "Cache-Control": "no-cache",
         "Upgrade-Insecure-Requests": "1",
@@ -141,7 +140,7 @@ func main() {
         })},
     }
 	
-    resp := requests.Get("https://breached.to/Forum-Databases", ext.Headers(headers), ext.Hooks(hooks))
+    resp := requests.Get("https://www.google.com", ext.Headers(headers), ext.Hooks(hooks))
     fmt.Println(resp.Html)
 }
 ```

@@ -25,13 +25,16 @@ func HookCloudFlareWorkerFunc(workerHost string, headers types.Dict) types.Hook 
 				headers["Px-IP"] = RandomIPv4()
 			}
 		}
+		var host string
 		request.(requests.Request).URL.Scheme = "https"
 		if proxy.Host != "" {
-			request.(requests.Request).URL.Host = proxy.Host
+			host = proxy.Host
 		} else {
 			// 冗余处理，当url解析不带协议头的URL，会存在Path中，需要切片取host部分
-			request.(requests.Request).URL.Host = strings.Split(proxy.Path, "/")[0]
+			host = strings.Split(proxy.Path, "/")[0]
 		}
+		request.(requests.Request).Request.Host = host
+		request.(requests.Request).URL.Host = host
 		reqHeader := request.(requests.Request).Header
 		for key, value := range headers {
 			reqHeader.Set(key, value)
