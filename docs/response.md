@@ -72,7 +72,7 @@ type Response struct {
 
 ```go
 resp := requests.Get("https://www.google.com", ext.Timeout(3))
-resp.Render(true)
+resp.Render()
 fmt.Println(resp.Html)
 ```
 
@@ -82,7 +82,7 @@ fmt.Println(resp.Html)
 
 ```go
 resp := requests.Get("https://www.google.com", ext.Timeout(3))
-buf := resp.Snapshot(true)
+buf := resp.Snapshot()
 if tmpFile, err := ioutil.TempFile("", "*.png"); err != nil {
     fmt.Println(err)
 } else {

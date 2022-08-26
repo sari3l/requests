@@ -47,7 +47,7 @@ type testStruct struct {
 }
 test := testStruct{Name: "sari3l"}
 json := tools.CovertStructToJson(test)
-resp := requests.Post("http://httpbin.org/post", ext.Json(json), ext.Proxy("http://127.0.0.1:8080"))
+resp := requests.Post("http://httpbin.org/post", ext.Json(json))
 fmt.Println(resp.Json())
 ```
 
