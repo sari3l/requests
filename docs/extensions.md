@@ -10,8 +10,7 @@ type Ext func(ep *ExtensionPackage)
 
 - [ext.AllowRedirects](extensions?id=extallowredirectsbool)
 - [ext.Auth](extensions?id=extauthextauthinter)
-    - ext.BasicAuth
-    - ext.BearerAuth
+- [ext.CipherSuites](extensions?id=extciphersuites)
 - [ext.Cookies](extensions?id=extcookiesextdict)
 - [ext.Data](extensions?id=extdataextdict)
 - [ext.Files](extensions?id=extfilesextdict)
@@ -21,6 +20,7 @@ type Ext func(ep *ExtensionPackage)
 - [ext.Params](extensions?id=extparamsextdict)
 - [ext.Proxy](extensions?id=extproxystring)
 - [ext.Stream](extensions?id=extstreamioreader)
+- [ext.Timeout](extensions?id=exttimeout)
 - [ext.Verify](extensions?id=extverifybool)
 
 为了使用可选参数，需要在文件中
@@ -74,6 +74,33 @@ fmt.Println(resp.Html)
 auth = types.BearerAuth{Token: "test"}
 resp = requests.Get("https://httpbin.org/bearer", ext.Auth(auth))
 fmt.Println(resp.Json())
+```
+
+## ext.CipherSuites([]uint16)
+
+可以自行控制加密套件，但受go影响会追加TLS1.3下的三个套件，不做展开
+
+```go
+cipherSuites := []uint16 {
+    // AEADs w/ ECDHE
+    tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+    tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+    tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305, tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+
+    // CBC w/ ECDHE
+    tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+    tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+
+    // AEADs w/o ECDHE
+    tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+    tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+
+    // CBC w/o ECDHE
+    tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+    tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+}
+resp := requests.Get("https://www.google.com", ext.CipherSuites(cipherSuites))
+fmt.Println(resp.Html)
 ```
 
 ## ext.Cookies(types.Dict)

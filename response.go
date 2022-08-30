@@ -90,7 +90,7 @@ func (resp *Response) URLs() []string {
 }
 
 // render chromeless 页面渲染
-func (resp *Response) render(customFlags []chromedp.ExecAllocatorOption, tasks ...chromedp.Action) {
+func (resp *Response) render(eventListener func(ctx context.Context), customFlags []chromedp.ExecAllocatorOption, tasks ...chromedp.Action) *Response {
 	var flags = []chromedp.ExecAllocatorOption{
 		chromedp.Flag("ignore-certificate-errors", !resp.Session.Verify),
 		chromedp.Flag("headless", true),
@@ -101,10 +101,19 @@ func (resp *Response) render(customFlags []chromedp.ExecAllocatorOption, tasks .
 	flags = append(flags, customFlags...)
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:], flags...)
-	chromeCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	defer cancel()
-	ctx, cancel := chromedp.NewContext(chromeCtx, chromedp.WithLogf(log.Printf))
+	ctx, cancel := chromedp.NewContext(allocCtx, chromedp.WithLogf(log.Printf))
 	defer cancel()
+	// 检查是否启动
+	if err := chromedp.Run(ctx); err != nil {
+		panic(err)
+	}
+
+	if eventListener != nil {
+		eventListener(ctx)
+	}
+
 	actions := []chromedp.Action{
 		actionBypassWebDriver(),
 		actionFuncSetCookies(resp),
@@ -117,27 +126,34 @@ func (resp *Response) render(customFlags []chromedp.ExecAllocatorOption, tasks .
 	if err != nil {
 		log.Println(errors.WithStack(err))
 	}
+	return resp
 }
 
-func (resp *Response) Render() {
-	resp.render(nil, chromedp.Tasks{
+func (resp *Response) Render() *Response {
+	if resp == nil {
+		return resp
+	}
+	return resp.render(nil, nil, chromedp.Tasks{
 		chromedp.OuterHTML("html", &resp.Html, chromedp.ByQuery),
 	})
+}
+
+// CustomRender 支持各类Action接口实现
+func (resp *Response) CustomRender(eventListener func(ctx context.Context), flags []chromedp.ExecAllocatorOption, actions ...chromedp.Action) *Response {
+	if resp == nil {
+		return resp
+	}
+	return resp.render(eventListener, flags, actions...)
 }
 
 // Snapshot quality: false->jpeg | true->png
 func (resp *Response) Snapshot(png bool) *[]byte {
 	var buf = new([]byte)
 	quality := int(*(*int8)(unsafe.Pointer(&png))) * 100
-	resp.render(nil, chromedp.Tasks{
+	resp.render(nil, nil, chromedp.Tasks{
 		chromedp.FullScreenshot(buf, quality),
 	})
 	return buf
-}
-
-// CustomRender 支持各类Action接口实现
-func (resp *Response) CustomRender(flags []chromedp.ExecAllocatorOption, actions ...chromedp.Action) {
-	resp.render(flags, actions...)
 }
 
 // Chromedp 相关actions

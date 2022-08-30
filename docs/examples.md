@@ -111,7 +111,7 @@ func main() {
 
 ## CloudFlare
 
-### Bypass with Workers
+### Request with Workers
 
 ```go
 import (
@@ -135,12 +135,95 @@ func main() {
     }
 	
     hooks := types.HooksDict{
-        "request": []types.Hook{tools.HookCloudFlareWorkFunc("https://delicate-xxx.sonymouse.workers.dev", types.Dict{
-            "Px-Token": "mysecuretoken", // 自定义安全验证头
+    "request": []types.Hook{tools.HookCloudFlareWorkFunc("https://delicate-xxx.sonymouse.workers.dev", types.Dict{
+                "Px-Token": "mysecuretoken", // 自定义安全验证头
+                "Px-Host": "www.google.com",
+                "Px-IP": "1,2,3,4",
         })},
     }
 	
     resp := requests.Get("https://www.google.com", ext.Headers(headers), ext.Hooks(hooks))
     fmt.Println(resp.Html)
+}
+```
+
+## Crawler
+
+### Image Downloader
+
+```go
+package main
+
+import (
+    "context"
+    "encoding/json"
+    "fmt"
+    "github.com/chromedp/cdproto/input"
+    "github.com/chromedp/cdproto/network"
+    "github.com/chromedp/chromedp"
+    "github.com/sari3l/requests"
+    "github.com/sari3l/requests/ext"
+    "io/ioutil"
+    "strings"
+    "time"
+)
+
+func main() {
+    const baseUrl = "https://x.com/video?page=%d"
+    for _, i := range []int{1, 2, 3} {
+        fmt.Printf("正在爬取 %d 页\n", i)
+        url := fmt.Sprintf(baseUrl, i)
+        
+        resp := requests.Get(url, ext.Timeout(5))
+        resp.CustomRender(listenForNetworkEvent, nil,
+            chromedp.EmulateViewport(1400, 2800, chromedp.EmulateScale(1)), 
+            chromedp.Sleep(5*time.Second), 
+            actionDispatchMouse())
+    }
+}
+
+func actionDispatchMouse() chromedp.ActionFunc {
+    return func(ctx context.Context) error {
+        p := input.DispatchMouseEvent(input.MouseWheel, 200, 200)
+        p = p.WithDeltaX(0)
+        // 滚轮向下滚动1000单位
+        p = p.WithDeltaY(float64(1000))
+        return p.Do(ctx)
+    }
+}
+
+type UrlResponse struct {
+    Url string `json:"url"`
+}
+
+func listenForNetworkEvent(ctx context.Context) {
+    chromedp.ListenTarget(ctx, func(ev interface{}) {
+        switch ev := ev.(type) {
+        // 是一个响应收到的事件
+        case *network.EventResponseReceived:
+            resp := ev.Response
+            if len(resp.Headers) != 0 {
+                //将这个resp转成json
+                response, _ := resp.MarshalJSON()
+                var res = &UrlResponse{}
+                json.Unmarshal(response, &res)
+                // 我们只关心是图片地址的url
+                if strings.Contains(res.Url, ".jpg") || strings.Contains(res.Url, "f=JPEG") {
+                    // 去对每个图片地址下载图片
+                    go download(res.Url)
+                }
+            }
+        }
+    })
+}
+
+func download(url string) {
+    tempFile, _ := ioutil.TempFile("", "*.jpg")
+    resp := requests.Get(url, ext.Timeout(5))
+    if resp == nil {
+        return
+    }
+    resp.Save(tempFile.Name())
+    fmt.Printf("已保存图片至 %s\n", tempFile.Name())
 }
 ```

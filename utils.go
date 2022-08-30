@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-const Version = "v1.1.11"
+const Version = "v1.1.12"
 
 const DefaultTimeout = 5 // time.Second
 

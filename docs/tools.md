@@ -78,6 +78,16 @@ fmt.Println(resp.Json())
 
 转换response.Html编码为GBK，需自行hook至`requests.Response`
 
+## Fingerprint
+
+### func HookClientJA3Func(fingerprint string) ext.Hook
+
+接收指纹字符串，返回对应Hook函数，需自行hook至`http.client`
+
+### func HookClientMitmFunc(fingerprint string) ext.Hook
+
+接收指纹字符串，返回对应Hook函数，需自行hook至`http.client`
+
 ## Hash
 
 大多是比较常见的函数
@@ -87,12 +97,6 @@ fmt.Println(resp.Json())
 ### func HmacSha256Base64Encode(data []byte, secret []byte) string
 
 ### func Md5(data []byte) string
-
-## Ja3
-
-### func HookClientJA3Func(fingerprint string) ext.Hook
-
-接收指纹字符串，返回对应Hook函数，需自行hook至`http.client`
 
 ## Random
 

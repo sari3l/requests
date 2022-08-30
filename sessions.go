@@ -74,6 +74,7 @@ func (s *session) prepareRequest() (error, *prepareRequest) {
 
 func (s *session) prepareClient() error {
 	_ = s.prepareTimeout()
+	_ = s.prepareCipherSuites()
 	if err := s.prepareProxy(); err != nil {
 		return err
 	}
@@ -204,9 +205,12 @@ func (s *session) prepareVerify() error {
 	return nil
 }
 
-func (s *session) SetVerify(verify bool) error {
-	s.Verify = verify
-	return s.prepareVerify()
+// crypto/tls 已做nil检查，直接传入即可
+func (s *session) prepareCipherSuites() error {
+	s.Client.Transport.(*http.Transport).TLSClientConfig = &tls.Config{
+		CipherSuites: s.CipherSuites,
+	}
+	return nil
 }
 
 func (s *session) Get(url string, ext ...types.Ext) *Response {

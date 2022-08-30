@@ -23,6 +23,12 @@ func Cookies(cookies types.Dict) types.Ext {
 	}
 }
 
+func CipherSuites(cipherSuites []uint16) types.Ext {
+	return func(ep *types.ExtensionPackage) {
+		ep.CipherSuites = cipherSuites
+	}
+}
+
 func Data(data types.Dict) types.Ext {
 	return func(ep *types.ExtensionPackage) {
 		ep.Data = data
