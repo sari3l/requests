@@ -13,15 +13,15 @@ import (
 	"time"
 )
 
-type session struct {
+type Session struct {
 	types.ExtensionPackage
 	Client       *http.Client
 	adapter      *adapter
 	cacheRequest *prepareRequest
 }
 
-func Session(timeout int, proxy string, redirect bool, verify bool) *session {
-	s := &session{
+func HTMLSession(timeout int, proxy string, redirect bool, verify bool) *Session {
+	s := &Session{
 		adapter: &adapter{},
 		Client: &http.Client{
 			Transport: new(http.Transport),
@@ -36,7 +36,7 @@ func Session(timeout int, proxy string, redirect bool, verify bool) *session {
 	return s
 }
 
-func (s *session) init(method string, url string, exts *[]types.Ext) *session {
+func (s *Session) init(method string, url string, exts *[]types.Ext) *Session {
 	s.Method = method
 	s.Url = url
 
@@ -47,7 +47,7 @@ func (s *session) init(method string, url string, exts *[]types.Ext) *session {
 	return s
 }
 
-func (s *session) request() *Response {
+func (s *Session) request() *Response {
 	var err error
 	err, s.cacheRequest = s.prepareRequest()
 	if err != nil {
@@ -63,8 +63,8 @@ func (s *session) request() *Response {
 	return s.Send(s.cacheRequest)
 }
 
-func (s *session) prepareRequest() (error, *prepareRequest) {
-	err, prep := PrepareRequest(s.Method, s.Url, s.Params, s.Headers, s.Cookies, s.Data, s.Json, s.Files, s.Stream, s.Auth, s.Hooks)
+func (s *Session) prepareRequest() (error, *prepareRequest) {
+	err, prep := PrepareRequest(s.Proto, s.Method, s.Url, s.Params, s.Headers, s.Cookies, s.Data, s.Json, s.Files, s.Stream, s.Auth, s.Hooks)
 	if err != nil {
 		return err, nil
 	}
@@ -72,7 +72,7 @@ func (s *session) prepareRequest() (error, *prepareRequest) {
 	return nil, prep
 }
 
-func (s *session) prepareClient() error {
+func (s *Session) prepareClient() error {
 	_ = s.prepareTimeout()
 	_ = s.prepareCipherSuites()
 	if err := s.prepareProxy(); err != nil {
@@ -84,7 +84,7 @@ func (s *session) prepareClient() error {
 	return nil
 }
 
-func (s *session) Send(prep *prepareRequest) *Response {
+func (s *Session) Send(prep *prepareRequest) *Response {
 	// 计时开机
 	startTime := time.Now().UnixMilli()
 	// 后续根据协议，切换adapter（实际go对应client配置）
@@ -113,14 +113,14 @@ func (s *session) Send(prep *prepareRequest) *Response {
 	return resp
 }
 
-func (s *session) RegisterHook(key string, hook types.Hook) error {
+func (s *Session) RegisterHook(key string, hook types.Hook) error {
 	if s.Hooks == nil {
 		s.Hooks = ext.DefaultHooks()
 	}
 	return ext.RegisterHook(&s.Hooks, key, hook)
 }
 
-func (s *session) resolveRedirects(resp *Response) []*Response {
+func (s *Session) resolveRedirects(resp *Response) []*Response {
 	var err error
 	history := make([]*Response, 0)
 	url := resp.Header.Get("Location")
@@ -148,7 +148,7 @@ func (s *session) resolveRedirects(resp *Response) []*Response {
 	return history
 }
 
-func (s *session) prepareRedirect() error {
+func (s *Session) prepareRedirect() error {
 	s.Client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
@@ -157,7 +157,7 @@ func (s *session) prepareRedirect() error {
 
 // net/http/Transport 支持 http/https/socks5，如果使用其他协议则会转为 http
 // proxy支持socks/socks5h，为了简便只使用其处理socks5h
-func (s *session) prepareProxy() error {
+func (s *Session) prepareProxy() error {
 	if s.Proxy == "" {
 		return nil
 	}
@@ -176,7 +176,7 @@ func (s *session) prepareProxy() error {
 		s.Client.Transport.(*http.Transport).DialContext = dialer.(proxy.ContextDialer).DialContext
 	}
 	// 设置 ProxyConnectHeader
-	if ua := s.Headers["User-Agent"]; ua != "" {
+	if ua := s.cacheRequest.headers.Get("User-Agent"); ua != "" {
 		header := &http.Header{}
 		header.Add("User-Agent", ua)
 		s.Client.Transport.(*http.Transport).ProxyConnectHeader = *header
@@ -184,7 +184,7 @@ func (s *session) prepareProxy() error {
 	return nil
 }
 
-func (s *session) prepareTimeout() error {
+func (s *Session) prepareTimeout() error {
 	if s.Timeout == 0 {
 		s.Timeout = DefaultTimeout
 	}
@@ -192,7 +192,7 @@ func (s *session) prepareTimeout() error {
 	return nil
 }
 
-func (s *session) prepareVerify() error {
+func (s *Session) prepareVerify() error {
 	if s.Verify == false {
 		if s.Client.Transport != nil {
 			s.Client.Transport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -206,33 +206,33 @@ func (s *session) prepareVerify() error {
 }
 
 // crypto/tls 已做nil检查，直接传入即可
-func (s *session) prepareCipherSuites() error {
+func (s *Session) prepareCipherSuites() error {
 	s.Client.Transport.(*http.Transport).TLSClientConfig = &tls.Config{
 		CipherSuites: s.CipherSuites,
 	}
 	return nil
 }
 
-func (s *session) Get(url string, ext ...types.Ext) *Response {
+func (s *Session) Get(url string, ext ...types.Ext) *Response {
 	return s.init("Get", url, &ext).request()
 }
 
-func (s *session) Post(url string, ext ...types.Ext) *Response {
+func (s *Session) Post(url string, ext ...types.Ext) *Response {
 	return s.init("Post", url, &ext).request()
 }
 
-func (s *session) Put(url string, ext ...types.Ext) *Response {
+func (s *Session) Put(url string, ext ...types.Ext) *Response {
 	return s.init("Put", url, &ext).request()
 }
 
-func (s *session) Delete(url string, ext ...types.Ext) *Response {
+func (s *Session) Delete(url string, ext ...types.Ext) *Response {
 	return s.init("Delete", url, &ext).request()
 }
 
-func (s *session) Head(url string, ext ...types.Ext) *Response {
+func (s *Session) Head(url string, ext ...types.Ext) *Response {
 	return s.init("Head", url, &ext).request()
 }
 
-func (s *session) Options(url string, ext ...types.Ext) *Response {
+func (s *Session) Options(url string, ext ...types.Ext) *Response {
 	return s.init("Option", url, &ext).request()
 }

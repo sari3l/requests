@@ -28,7 +28,7 @@ func Options(url string, ext ...types.Ext) *Response {
 	return initRequest("OPTIONS", url, &ext).request()
 }
 
-func initRequest(method string, url string, exts *[]types.Ext) *session {
-	s := Session(5, "", true, true)
+func initRequest(method string, url string, exts *[]types.Ext) *Session {
+	s := HTMLSession(5, "", true, true)
 	return s.init(method, url, exts)
 }

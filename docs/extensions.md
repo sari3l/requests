@@ -16,6 +16,7 @@ type Ext func(ep *ExtensionPackage)
 - [ext.Files](extensions?id=extfilesextdict)
 - [ext.Headers](extensions?id=extheadersextdict)
 - [ext.Hooks](extensions?id=exthooksexthookdict)
+- [ext.HTTP2](extensions?id=exthttp2bool)
 - [ext.Json](extensions?id=extjsonmapstringinterface)
 - [ext.Params](extensions?id=extparamsextdict)
 - [ext.Proxy](extensions?id=extproxystring)
@@ -183,6 +184,13 @@ func printHeaders(response any) (error, any) {
     return nil, response
 }
 ```
+
+## ext.HTTP2(bool)
+
+是否使用HTTP2
+
+- `true`：使用`HTTP/2`
+- 默认或`false`：使用`HTTP/1.1`
 
 ## ext.Json(types.Json)
 

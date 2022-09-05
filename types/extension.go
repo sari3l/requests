@@ -14,6 +14,7 @@ type ExtensionPackage struct {
 	Files          Dict
 	Headers        Dict
 	Hooks          HooksDict
+	Proto          string
 	Json           map[string]any
 	Params         Dict
 	Proxy          string

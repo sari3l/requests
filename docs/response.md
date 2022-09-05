@@ -5,7 +5,7 @@
 ```go
 type Response struct {
     *http.Response
-    Session *session
+    Session *Session
     cookies []*http.Cookie
     Ok      bool
     Raw     []byte
@@ -90,7 +90,7 @@ if tmpFile, err := ioutil.TempFile("", "*.png"); err != nil {
 }
 ```
 
-#### func CustomRender(eventListener func(ctx context.Context), flags []chromedp.ExecAllocatorOption, actions ...chromedp.Action) *Response
+#### CustomRender(targetListenerCallback func(ev interface{}), flags []chromedp.ExecAllocatorOption, actions ...chromedp.Action) *Response
 
 自定义事件监听、无头参数设置，以及多组操作执行
 

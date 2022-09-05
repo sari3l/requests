@@ -20,12 +20,12 @@ import (
 
 type Response struct {
 	*http.Response
-	Session *session
+	Session *Session
 	cookies []*http.Cookie
+	History []*Response
+	Html    string
 	Ok      bool
 	Raw     []byte
-	Html    string
-	History []*Response
 	Time    int64
 }
 
@@ -90,7 +90,7 @@ func (resp *Response) URLs() []string {
 }
 
 // render chromeless 页面渲染
-func (resp *Response) render(eventListener func(ctx context.Context), customFlags []chromedp.ExecAllocatorOption, tasks ...chromedp.Action) *Response {
+func (resp *Response) render(targetListenerFunc func(ev interface{}), customFlags []chromedp.ExecAllocatorOption, tasks ...chromedp.Action) *Response {
 	var flags = []chromedp.ExecAllocatorOption{
 		chromedp.Flag("ignore-certificate-errors", !resp.Session.Verify),
 		chromedp.Flag("headless", true),
@@ -101,17 +101,17 @@ func (resp *Response) render(eventListener func(ctx context.Context), customFlag
 	flags = append(flags, customFlags...)
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:], flags...)
-	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	chromeCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	defer cancel()
-	ctx, cancel := chromedp.NewContext(allocCtx, chromedp.WithLogf(log.Printf))
+	tabCtx, cancel := chromedp.NewContext(chromeCtx, chromedp.WithLogf(log.Printf))
 	defer cancel()
 	// 检查是否启动
-	if err := chromedp.Run(ctx); err != nil {
+	if err := chromedp.Run(tabCtx); err != nil {
 		panic(err)
 	}
 
-	if eventListener != nil {
-		eventListener(ctx)
+	if targetListenerFunc != nil {
+		chromedp.ListenTarget(tabCtx, targetListenerFunc)
 	}
 
 	actions := []chromedp.Action{
@@ -119,10 +119,13 @@ func (resp *Response) render(eventListener func(ctx context.Context), customFlag
 		actionFuncSetCookies(resp),
 		chromedp.Navigate(resp.Request.URL.String()),
 	}
+
 	for _, task := range tasks {
-		actions = append(actions, task)
+		if task != nil {
+			actions = append(actions, task)
+		}
 	}
-	err := chromedp.Run(ctx, actions...)
+	err := chromedp.Run(tabCtx, actions...)
 	if err != nil {
 		log.Println(errors.WithStack(err))
 	}
@@ -139,11 +142,11 @@ func (resp *Response) Render() *Response {
 }
 
 // CustomRender 支持各类Action接口实现
-func (resp *Response) CustomRender(eventListener func(ctx context.Context), flags []chromedp.ExecAllocatorOption, actions ...chromedp.Action) *Response {
+func (resp *Response) CustomRender(targetListenerCallback func(ev interface{}), flags []chromedp.ExecAllocatorOption, actions ...chromedp.Action) *Response {
 	if resp == nil {
 		return resp
 	}
-	return resp.render(eventListener, flags, actions...)
+	return resp.render(targetListenerCallback, flags, actions...)
 }
 
 // Snapshot quality: false->jpeg | true->png

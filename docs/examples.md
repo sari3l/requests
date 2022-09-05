@@ -42,8 +42,8 @@ import (
 )
 
 func main() {
-    session := requests.Session(5, "", true, true)
-    _, prep := requests.PrepareRequest("get", "https://ja3er.com/json", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+    session := requests.HTMLSession(5, "", true, true)
+    _, prep := requests.PrepareRequest("HTTP/1.1", "get", "https://ja3er.com/json", nil, nil, nil, nil, nil, nil, nil, nil, nil)
     tr, _ := ja3transport.NewTransport("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53-10,0-23-65281-10-11-35-16-5-13-18-51-45-43-27-21,29-23-24,0")
     session.Client.Transport = tr
     resp := session.Send(prep)
@@ -151,9 +151,9 @@ func main() {
 
 ### Image Downloader
 
-```go
-package main
+#### 手动下载
 
+```go
 import (
     "context"
     "encoding/json"
@@ -196,10 +196,9 @@ type UrlResponse struct {
     Url string `json:"url"`
 }
 
-func listenForNetworkEvent(ctx context.Context) {
-    chromedp.ListenTarget(ctx, func(ev interface{}) {
-        switch ev := ev.(type) {
-        // 是一个响应收到的事件
+func listenForNetworkEvent(ev interface{}) {
+    switch ev := ev.(type) {
+    // 是一个响应收到的事件
         case *network.EventResponseReceived:
             resp := ev.Response
             if len(resp.Headers) != 0 {
@@ -211,10 +210,9 @@ func listenForNetworkEvent(ctx context.Context) {
                 if strings.Contains(res.Url, ".jpg") || strings.Contains(res.Url, "f=JPEG") {
                     // 去对每个图片地址下载图片
                     go download(res.Url)
-                }
             }
         }
-    })
+    }
 }
 
 func download(url string) {
@@ -225,5 +223,24 @@ func download(url string) {
     }
     resp.Save(tempFile.Name())
     fmt.Printf("已保存图片至 %s\n", tempFile.Name())
+}
+```
+
+#### 使用 tools.FileDownload
+
+```go
+import (
+	"github.com/sari3l/requests"
+	"github.com/sari3l/requests/ext"
+	"github.com/sari3l/requests/tools"
+	"github.com/sari3l/requests/types"
+)
+
+func main() {
+    headers := types.Dict{
+        "User-Agent": tools.RandomUserAgent(),
+    }
+    resp := requests.Get("https://www.x.com/video?page=1", ext.Headers(headers))
+    tools.FileDownload(resp, []string{"jpg"}, "")
 }
 ```

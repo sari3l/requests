@@ -22,6 +22,7 @@ func HookClientJA3Func(fingerprint string) types.Hook {
 
 // HookClientMitmFunc 传入MitmEngine指纹，自动转换
 // 例如 "303:4,5,a,13,2f,32,33,35,38,39,c009,c00a,c013,c014:0,a,b,17,ff01:17,18:0"
+// 目前不是很优雅，封装了JA3的函数，后面自己写个TP生成器
 func HookClientMitmFunc(fingerprint string) types.Hook {
 	parts := strings.Split(fingerprint, ":")
 	if len(parts) < 5 {

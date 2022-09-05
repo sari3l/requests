@@ -56,6 +56,16 @@ func Hooks(hooksDict types.HooksDict) types.Ext {
 	}
 }
 
+func HTTP2(is bool) types.Ext {
+	return func(ep *types.ExtensionPackage) {
+		if is {
+			ep.Proto = "HTTP/2"
+		} else {
+			ep.Proxy = "HTTP/1.1"
+		}
+	}
+}
+
 func Json(json map[string]any) types.Ext {
 	return func(ep *types.ExtensionPackage) {
 		ep.Json = json

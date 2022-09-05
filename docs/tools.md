@@ -2,6 +2,20 @@
 
 为方便使用，默认提供了一些小工具
 
+## Chromedp
+
+### func FileDownload(resp *requests.Response, fileTypes []string, savePath string)
+
+第二个参数为文件类型列表，第三个参数为存储文件夹路径（为空则自动生成临时文件夹）
+
+```go
+headers := types.Dict{
+    "User-Agent": tools.RandomUserAgent(),
+}
+resp := requests.Get("https://www.x.com/", ext.Headers(headers))
+tools.FileDownload(resp, []string{"jpg"}, "")
+```
+
 ## CloudFlare
 
 ### func HookCloudFlareWorkerFunc(workerHost string, headers types.Dict) types.Hook

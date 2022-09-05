@@ -17,7 +17,7 @@ type adapter struct {
 }
 
 func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.HooksDict) *Response {
-	req := &Request{Request: &http.Request{Proto: "HTTP/1.1"}}
+	req := &Request{Request: &http.Request{Proto: prep.proto}}
 
 	req.Method = prep.method
 

@@ -19,17 +19,18 @@ import (
 type prepareRequest struct {
 	method  string
 	url     string
+	proto   string
 	headers *http.Header
 	cookies []*http.Cookie
 	body    *io.ReadCloser
 	hooks   types.HooksDict
 }
 
-func PrepareRequest(method string, url string, params types.Dict, headers types.Dict, cookies types.Dict, data types.Dict, json map[string]any, files types.Dict, stream io.Reader, auth types.AuthInter, hooks types.HooksDict) (error, *prepareRequest) {
+func PrepareRequest(proto string, method string, url string, params types.Dict, headers types.Dict, cookies types.Dict, data types.Dict, json map[string]any, files types.Dict, stream io.Reader, auth types.AuthInter, hooks types.HooksDict) (error, *prepareRequest) {
 	var err error
 	_prepareRequest := new(prepareRequest)
+	_prepareRequest.prepareProto(proto)
 	_prepareRequest.prepareMethod(method)
-	_prepareRequest.headers = defaultHeaders() // header 手动输入优先级更高
 	if err = _prepareRequest.prepareUrl(url, params); err != nil {
 		return err, nil
 	}
@@ -52,6 +53,14 @@ func PrepareRequest(method string, url string, params types.Dict, headers types.
 	}
 
 	return nil, _prepareRequest
+}
+
+func (prep *prepareRequest) prepareProto(proto string) {
+	if proto != "" {
+		prep.proto = proto
+	} else {
+		prep.proto = "HTTP/1.1"
+	}
 }
 
 func (prep *prepareRequest) prepareMethod(method string) {
@@ -94,12 +103,19 @@ func (prep *prepareRequest) prepareUrl(urlRaw string, params types.Dict) error {
 	return nil
 }
 
+// 已知问题，不按初始化排序，google的高傲尽显，So fuck you google 🖕
+// https://go-review.googlesource.com/c/go/+/105755
 func (prep *prepareRequest) prepareHeaders(headers types.Dict) error {
 	if headers != nil {
+		if prep.headers == nil {
+			prep.headers = &http.Header{}
+		}
 		for k, v := range headers {
 			// 在 go/src/net/http/transport.go:504 -> roundTrip 有header头检查
 			prep.headers.Set(k, v)
 		}
+	} else {
+		prep.headers = defaultHeaders()
 	}
 	return nil
 }
