@@ -83,6 +83,14 @@ func (resp *Response) ContentType() string {
 	return resp.Response.Header.Get("Content-Type")
 }
 
+func (resp *Response) Title() string {
+	nodes := resp.XPath().Find("/html/head/title")
+	if len(nodes) == 1 {
+		return nodes[0].Text()
+	}
+	return ""
+}
+
 func (resp *Response) URLs() []string {
 	links := linkRegexCompiled.FindAllString(resp.Html, -1)
 	originUrl := resp.Request.URL
@@ -90,7 +98,7 @@ func (resp *Response) URLs() []string {
 }
 
 // render chromeless 页面渲染
-func (resp *Response) render(targetListenerFunc func(ev interface{}), customFlags []chromedp.ExecAllocatorOption, tasks ...chromedp.Action) *Response {
+func (resp *Response) render(targetListenerFunctions []func(ev interface{}), customFlags []chromedp.ExecAllocatorOption, tasks ...chromedp.Action) *Response {
 	var flags = []chromedp.ExecAllocatorOption{
 		chromedp.Flag("ignore-certificate-errors", !resp.Session.Verify),
 		chromedp.Flag("headless", true),
@@ -110,8 +118,10 @@ func (resp *Response) render(targetListenerFunc func(ev interface{}), customFlag
 		panic(err)
 	}
 
-	if targetListenerFunc != nil {
-		chromedp.ListenTarget(tabCtx, targetListenerFunc)
+	if targetListenerFunctions != nil && len(targetListenerFunctions) > 0 {
+		for _, targetListenerFunc := range targetListenerFunctions {
+			chromedp.ListenTarget(tabCtx, targetListenerFunc)
+		}
 	}
 
 	actions := []chromedp.Action{
@@ -136,41 +146,44 @@ func (resp *Response) Render() *Response {
 	if resp == nil {
 		return resp
 	}
-	return resp.render(nil, nil, chromedp.Tasks{
-		chromedp.OuterHTML("html", &resp.Html, chromedp.ByQuery),
-	})
+	return resp.CustomRender(nil, nil, nil)
 }
 
 // CustomRender 支持各类Action接口实现
-func (resp *Response) CustomRender(targetListenerCallback func(ev interface{}), flags []chromedp.ExecAllocatorOption, actions ...chromedp.Action) *Response {
+func (resp *Response) CustomRender(targetListenerCallbacks []func(ev interface{}), flags []chromedp.ExecAllocatorOption, actions ...chromedp.Action) *Response {
 	if resp == nil {
 		return resp
 	}
-	return resp.render(targetListenerCallback, flags, actions...)
+	if actions == nil {
+		actions = []chromedp.Action{chromedp.OuterHTML("html", &resp.Html, chromedp.ByQuery)}
+	} else {
+		actions = append(actions, chromedp.OuterHTML("html", &resp.Html, chromedp.ByQuery))
+	}
+	return resp.render(targetListenerCallbacks, flags, actions...)
 }
 
 // Snapshot quality: false->jpeg | true->png
-func (resp *Response) Snapshot(png bool) *[]byte {
+func (resp *Response) Snapshot(fullscreen bool, png bool) *[]byte {
 	var buf = new([]byte)
 	quality := int(*(*int8)(unsafe.Pointer(&png))) * 100
+	var screenShotAction chromedp.Action
+	if fullscreen {
+		screenShotAction = chromedp.FullScreenshot(buf, quality)
+	} else {
+		screenShotAction = chromedp.CaptureScreenshot(buf)
+	}
 	resp.render(nil, nil, chromedp.Tasks{
-		chromedp.FullScreenshot(buf, quality),
+		screenShotAction,
 	})
 	return buf
 }
 
-// Chromedp 相关actions
-// chromelss 检测地址：https://intoli.com/blog/not-possible-to-block-chrome-headless/chrome-headless-test.html
-// 参考资料：https://github.com/chromedp/chromedp/issues/396#issuecomment-503351342
-
 func actionFuncSetCookies(resp *Response) chromedp.ActionFunc {
-	cookiesDict := &resp.Session.Cookies
 	domain := &resp.Request.URL.Host
-	//cookiesResp := &resp.cookies
-	//if useExtCookies || cookiesResp == nil || len(*cookiesResp) == 0 {
+	cookies := &resp.Session.Cookies
 	return func(ctx context.Context) error {
 		expr := cdp.TimeSinceEpoch(time.Now().Add(180 * 24 * time.Hour))
-		for name, value := range *cookiesDict {
+		for name, value := range *cookies {
 			err := network.SetCookie(name, value).
 				WithExpires(&expr).
 				WithDomain(*domain).
@@ -184,23 +197,6 @@ func actionFuncSetCookies(resp *Response) chromedp.ActionFunc {
 		}
 		return nil
 	}
-	//} else {
-	//return func(ctx context.Context) error {
-	//	for _, cookie := range *cookiesResp {
-	//		err := network.SetCookie(cookie.Name, cookie.String()).
-	//			WithExpires((*cdp.TimeSinceEpoch)(&cookie.Expires)).
-	//			WithDomain(cookie.Domain).
-	//			WithPath(cookie.Path).
-	//			WithHTTPOnly(cookie.HttpOnly).
-	//			WithSecure(cookie.Secure).
-	//			Do(ctx)
-	//		if err != nil {
-	//			return err
-	//		}
-	//	}
-	//	return nil
-	//}
-	//}
 }
 
 func actionBypassWebDriver() chromedp.ActionFunc {

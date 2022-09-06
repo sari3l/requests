@@ -119,3 +119,11 @@ fmt.Println(resp.Json())
 ### func RandomIPv6() string
 
 ### func RandomUserAgent() string
+
+## Report
+
+### func ReportHTTPResponse(response *requests.Response, savePath *string) string
+
+输出请求报告，返回值为文件路径
+
+<img src="https://raw.githubusercontent.com/sari3l/requests/main/docs/static/report.png" alt="Report Demo"/>

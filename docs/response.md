@@ -41,29 +41,33 @@ type Response struct {
 
 ### 常规方法
 
+#### func ContentType()
+
+返回响应头中的`Content-Type`值
+
 #### func Json()
 
 返回`*gjson.Result`
-
-#### func XPath()
-
-返回`*parser.XpathNode`
-
-#### func Text()
-
-返回Document中的所有`Text`节点内容
 
 #### func Save(path string)
 
 此方法会将`Response.Raw`写入路径对应文件
 
-#### func ContentType()
+#### func Text()
 
-返回响应头中的`Content-Type`值
+返回Document中的所有节点字符串内容
+
+#### func Title()
+
+返回`title`节点信息
 
 #### func URLs()
 
 返回响应页面中的所有链接
+
+#### func XPath()
+
+返回`*parser.XpathNode`
 
 ### 动态渲染
 #### func Render() *Response
@@ -75,13 +79,13 @@ resp := requests.Get("https://www.google.com", ext.Timeout(3)).Render()
 fmt.Println(resp.Html)
 ```
 
-#### func Snapshot(png bool) []byte
+#### func Snapshot(fullscreen bool, png bool) []byte
 
-动态渲染页面后截图，返回`png`或`jpeg`对应`[]byte`数据，需要自行存储
+动态渲染页面后截图，截取`浏览器尺寸`或`全页面`截图，返回`png`或`jpeg`对应`[]byte`数据，需要自行存储
 
 ```go
 resp := requests.Get("https://www.google.com", ext.Timeout(3))
-buf := resp.Snapshot(true)
+buf := resp.Snapshot(true, true)
 if tmpFile, err := ioutil.TempFile("", "*.png"); err != nil {
     fmt.Println(err)
 } else {
@@ -90,9 +94,9 @@ if tmpFile, err := ioutil.TempFile("", "*.png"); err != nil {
 }
 ```
 
-#### CustomRender(targetListenerCallback func(ev interface{}), flags []chromedp.ExecAllocatorOption, actions ...chromedp.Action) *Response
+#### CustomRender(targetListenerCallbacks []func(ev interface{}), flags []chromedp.ExecAllocatorOption, actions ...chromedp.Action) *Response
 
-自定义事件监听、无头参数设置，以及多组操作执行
+自定义多组事件监听、无头参数设置，以及多组操作执行
 
 ```go
 resp := requests.Get("https://www.google.com", ext.Timeout(3))
