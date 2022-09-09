@@ -4,7 +4,6 @@ import (
 	"bytes"
 	eJson "encoding/json"
 	"errors"
-	"github.com/sari3l/requests/ext"
 	"github.com/sari3l/requests/types"
 	"io"
 	"io/ioutil"
@@ -26,7 +25,7 @@ type prepareRequest struct {
 	hooks   types.HooksDict
 }
 
-func PrepareRequest(proto string, method string, url string, params types.Dict, headers types.Dict, cookies types.Dict, data types.Dict, json map[string]any, files types.Dict, stream io.Reader, auth types.AuthInter, hooks types.HooksDict) (error, *prepareRequest) {
+func PrepareRequest(proto string, method string, url string, params types.Dict, headers types.Dict, cookies types.Dict, form types.Dict, json map[string]any, files types.Dict, stream io.Reader, auth types.AuthInter) (error, *prepareRequest) {
 	var err error
 	_prepareRequest := new(prepareRequest)
 	_prepareRequest.prepareProto(proto)
@@ -34,7 +33,7 @@ func PrepareRequest(proto string, method string, url string, params types.Dict, 
 	if err = _prepareRequest.prepareUrl(url, params); err != nil {
 		return err, nil
 	}
-	if err = _prepareRequest.prepareBody(data, files, json, stream); err != nil {
+	if err = _prepareRequest.prepareBody(form, files, json, stream); err != nil {
 		return err, nil
 	}
 	if err = _prepareRequest.prepareHeaders(headers); err != nil {
@@ -46,7 +45,6 @@ func PrepareRequest(proto string, method string, url string, params types.Dict, 
 	if err = _prepareRequest.prepareAuth(auth); err != nil {
 		return err, nil
 	}
-	_prepareRequest.prepareHooks(hooks)
 
 	if err != nil {
 		return err, nil
@@ -58,6 +56,8 @@ func PrepareRequest(proto string, method string, url string, params types.Dict, 
 func (prep *prepareRequest) prepareProto(proto string) {
 	if proto != "" {
 		prep.proto = proto
+	} else if strings.HasSuffix(proto, "2") {
+		prep.proto = "HTTP/2"
 	} else {
 		prep.proto = "HTTP/1.1"
 	}
@@ -136,12 +136,12 @@ func (prep *prepareRequest) prepareCookies(cookies types.Dict) error {
 	return nil
 }
 
-func (prep *prepareRequest) prepareBody(data, files types.Dict, json map[string]any, stream io.Reader) error {
+func (prep *prepareRequest) prepareBody(form, files types.Dict, json map[string]any, stream io.Reader) error {
 	var closer io.ReadCloser
 	contentType := ""
 	contentLength := 0
 	// json
-	if data == nil && json != nil {
+	if form == nil && json != nil {
 		jsonByte, err := eJson.Marshal(json)
 		if err != nil {
 			return err
@@ -171,18 +171,18 @@ func (prep *prepareRequest) prepareBody(data, files types.Dict, json map[string]
 				panic(err)
 			}
 		}
-		if data != nil {
-			for k, v := range data {
+		if form != nil {
+			for k, v := range form {
 				_ = writer.WriteField(k, v)
 			}
 		}
 		defer writer.Close()
 		closer = ioutil.NopCloser(bytes.NewReader(buffer.Bytes()))
 		contentLength = buffer.Len()
-		contentType = "multipart/form-data"
-	} else if data != nil {
+		contentType = "multipart/form-form"
+	} else if form != nil {
 		dataValues := nUrl.Values{}
-		for k, v := range data {
+		for k, v := range form {
 			dataValues.Set(k, v)
 		}
 		_dataEncoded := dataValues.Encode()
@@ -206,17 +206,4 @@ func (prep *prepareRequest) prepareAuth(auth types.AuthInter) error {
 		return nil
 	}
 	return auth.Format(prep.headers)
-}
-
-func (prep *prepareRequest) prepareHooks(hooks types.HooksDict) {
-	if prep.hooks == nil {
-		prep.hooks = ext.DefaultHooks()
-	}
-	for event, _hooks := range hooks {
-		if prep.hooks[event] != nil {
-			prep.hooks[event] = append(prep.hooks[event], _hooks...)
-		} else {
-			prep.hooks[event] = _hooks
-		}
-	}
 }

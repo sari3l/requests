@@ -8,7 +8,6 @@ type Ext func(ep *ExtensionPackage)
 
 目前支持的可选参数有
 
-- [ext.AllowRedirects](extensions?id=extallowredirectsbool)
 - [ext.Auth](extensions?id=extauthextauthinter)
 - [ext.CipherSuites](extensions?id=extciphersuites)
 - [ext.Cookies](extensions?id=extcookiesextdict)
@@ -16,12 +15,15 @@ type Ext func(ep *ExtensionPackage)
 - [ext.Files](extensions?id=extfilesextdict)
 - [ext.Headers](extensions?id=extheadersextdict)
 - [ext.Hooks](extensions?id=exthooksexthookdict)
-- [ext.HTTP2](extensions?id=exthttp2bool)
 - [ext.Json](extensions?id=extjsonmapstringinterface)
 - [ext.Params](extensions?id=extparamsextdict)
+- [ext.ProcessOptions](extensions?id=extprocessoptionsprocessbaroption)
+- [ext.Protocol](extensions?id=extprotocolstring)
 - [ext.Proxy](extensions?id=extproxystring)
+- [ext.Redirect](extensions?id=extredirectbool)
 - [ext.Stream](extensions?id=extstreamioreader)
-- [ext.Timeout](extensions?id=exttimeout)
+- [ext.Timeout](extensions?id=exttimeoutint)
+- [ext.Tracer](extensions?id=exttracerbool)
 - [ext.Verify](extensions?id=extverifybool)
 
 为了使用可选参数，需要在文件中
@@ -41,21 +43,6 @@ type HooksDict map[string][]Hook
 ```
 
 注：单个请求可设置多个可选参数，下面是对单个参数的解释，所以均只设置相关参数
-
-## ext.AllowRedirects(bool)
-
-> 启用自动跳转
-
-默认`true`，即自动处理跳转至最终页面，同时会将中间响应保存在`Response.History`中
-
-```go
-var resp *requests.Response
-
-resp = requests.Get("https://httpbin.org/redirect/2", ext.AllowRedirects(false))
-fmt.Println(resp.StatusCode)
-resp = requests.Get("https://httpbin.org/redirect/2", ext.AllowRedirects(true))
-fmt.Println(resp.StatusCode)
-```
 
 ## ext.Auth(types.AuthInter)
 
@@ -184,14 +171,6 @@ func printHeaders(response any) (error, any) {
     return nil, response
 }
 ```
-
-## ext.HTTP2(bool)
-
-是否使用HTTP2
-
-- `true`：使用`HTTP/2`
-- 默认或`false`：使用`HTTP/1.1`
-
 ## ext.Json(types.Json)
 
 > Body数据为Json内容
@@ -229,6 +208,22 @@ resp = requests.Get("https://httpbin.org/get?key=%%25")
 fmt.Println(resp.Json())
 ```
 
+## ext.ProcessOptions(...processbar.Option) 
+
+```go
+resp := requests.Get(url, ext.ProcessOptions(
+        processbar.OptionsInvisible(false),
+        processbar.OptionsCleanAfterFinish(false),
+        processbar.OptionsFullWidth(true),
+        processbar.OptionsShowFileName(true),
+    ))
+```
+
+## ext.Protocol(string)
+
+设置使用协议`HTTP/1.1`或`HTTP/2`，可以只输入版本简化如`1.1`或`2`
+
+
 ## ext.Proxy(string)
 
 > 中间代理
@@ -237,6 +232,21 @@ fmt.Println(resp.Json())
 
 ```go
 resp := requests.Get("https://github.com/", ext.Proxy("http://127.0.0.1:8080"))
+```
+
+## ext.Redirect(bool)
+
+> 启用自动跳转
+
+默认`true`，即自动处理跳转至最终页面，同时会将中间响应保存在`Response.History`中
+
+```go
+var resp *requests.Response
+
+resp = requests.Get("https://httpbin.org/redirect/2", ext.Redirects(false))
+fmt.Println(resp.StatusCode)
+resp = requests.Get("https://httpbin.org/redirect/2", ext.Redirects(true))
+fmt.Println(resp.StatusCode)
 ```
 
 ## ext.Stream(io.Reader)
@@ -260,6 +270,13 @@ resp := requests.Get("https://httpbin.org/get", ext.Timeout(3))
 fmt.Println(resp.Json())
 ```
 
+## ext.Tracer(bool)
+
+开启连接性能跟踪
+
+```go
+resp := requests.Get(url, ext.Tracer(true))
+```
 
 ## ext.Verify(bool)
 

@@ -20,7 +20,7 @@ func ReportHTTPResponse(response *requests.Response, savePath *string) string {
 	if savePath == nil {
 		savePath = new(string)
 	}
-	tmp, err := ioutil.TempFile(*savePath, "*.html")
+	tmp, err := ioutil.TempFile(*savePath, fmt.Sprintf("%s_*.html", response.Request.URL.Host))
 	if err != nil {
 		fmt.Println(err)
 	}

@@ -3,7 +3,6 @@ package tools
 import (
 	"fmt"
 	"github.com/sari3l/requests"
-	"path"
 )
 
 func Download(session *requests.Session, rawUrl *string, savePath *string) {
@@ -12,11 +11,11 @@ func Download(session *requests.Session, rawUrl *string, savePath *string) {
 		fmt.Printf("[x] 下载失败：%s\n", *rawUrl)
 		return
 	}
-	tempPath := path.Join(*savePath, path.Base(resp.Request.URL.Path))
-	err := resp.Save(tempPath)
+	//tempPath := path.Join(*savePath, path.Base(resp.Request.URL.Path))
+	tmpPath, err := resp.Save(*savePath)
 	if err != nil {
 		fmt.Printf("[x] 下载失败：%s\n", *rawUrl)
 	} else {
-		fmt.Printf("[v] 下载成功：%s，保存路径：%s\n", *rawUrl, tempPath)
+		fmt.Printf("[v] 下载成功：%s，保存路径：%s\n", *rawUrl, tmpPath)
 	}
 }

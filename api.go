@@ -29,6 +29,6 @@ func Options(url string, ext ...types.Ext) *Response {
 }
 
 func initRequest(method string, url string, exts *[]types.Ext) *Session {
-	s := HTMLSession(5, "", true, true)
+	s := HTMLSession()
 	return s.init(method, url, exts)
 }

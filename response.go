@@ -7,12 +7,14 @@ import (
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/pkg/errors"
-	"github.com/sari3l/requests/parser"
+	"github.com/sari3l/requests/internal/parser"
 	"github.com/tidwall/gjson"
 	"golang.org/x/net/html"
 	"log"
 	"net/http"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 	"time"
 	"unsafe"
@@ -25,8 +27,7 @@ type Response struct {
 	History []*Response
 	Html    string
 	Ok      bool
-	Raw     []byte
-	Time    int64
+	Raw     *[]byte
 }
 
 func (resp *Response) Json() *gjson.Result {
@@ -67,16 +68,21 @@ loopDom:
 	return text
 }
 
-func (resp *Response) Save(filename string) error {
-	f, err := os.Create(filename)
+func (resp *Response) Save(savePath string) (string, error) {
+	filename := filepath.Base(savePath)
+	saveDir := filepath.Dir(savePath)
+	if strings.HasSuffix(savePath, "/") || filename == "" {
+		filename = filepath.Base(resp.Session.Url)
+	}
+	f, err := os.Create(path.Join(saveDir, filename))
 	if err != nil {
-		return err
+		return f.Name(), err
 	}
 	defer f.Close()
 
-	_, err = f.Write(resp.Raw)
+	_, err = f.Write(*resp.Raw)
 	f.Sync()
-	return err
+	return f.Name(), err
 }
 
 func (resp *Response) ContentType() string {
@@ -139,6 +145,8 @@ func (resp *Response) render(targetListenerFunctions []func(ev interface{}), cus
 	if err != nil {
 		log.Println(errors.WithStack(err))
 	}
+
+	// 是否加一个超时监控
 	return resp
 }
 

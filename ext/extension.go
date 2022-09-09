@@ -1,15 +1,10 @@
 package ext
 
 import (
+	"github.com/sari3l/requests/internal/processbar"
 	"github.com/sari3l/requests/types"
 	"io"
 )
-
-func AllowRedirects(allowRedirects bool) types.Ext {
-	return func(ep *types.ExtensionPackage) {
-		ep.AllowRedirects = allowRedirects
-	}
-}
 
 func Auth(auth types.AuthInter) types.Ext {
 	return func(ep *types.ExtensionPackage) {
@@ -29,9 +24,9 @@ func CipherSuites(cipherSuites []uint16) types.Ext {
 	}
 }
 
-func Data(data types.Dict) types.Ext {
+func Form(form types.Dict) types.Ext {
 	return func(ep *types.ExtensionPackage) {
-		ep.Data = data
+		ep.Form = form
 	}
 }
 
@@ -56,13 +51,9 @@ func Hooks(hooksDict types.HooksDict) types.Ext {
 	}
 }
 
-func HTTP2(is bool) types.Ext {
+func Protocol(protocol string) types.Ext {
 	return func(ep *types.ExtensionPackage) {
-		if is {
-			ep.Proto = "HTTP/2"
-		} else {
-			ep.Proxy = "HTTP/1.1"
-		}
+		ep.Protocol = protocol
 	}
 }
 
@@ -78,9 +69,21 @@ func Params(params types.Dict) types.Ext {
 	}
 }
 
+func ProcessOptions(opts ...processbar.Option) types.Ext {
+	return func(ep *types.ExtensionPackage) {
+		ep.ProcessOptions = opts
+	}
+}
+
 func Proxy(proxy string) types.Ext {
 	return func(ep *types.ExtensionPackage) {
 		ep.Proxy = proxy
+	}
+}
+
+func Redirect(allow bool) types.Ext {
+	return func(ep *types.ExtensionPackage) {
+		ep.Redirect = allow
 	}
 }
 
@@ -90,15 +93,20 @@ func Stream(stream io.Reader) types.Ext {
 	}
 }
 
-func Timeout(timeout int) types.Ext {
+func Timeout(second int) types.Ext {
 	return func(ep *types.ExtensionPackage) {
-		ep.Timeout = timeout
+		ep.Timeout = second
+	}
+}
+
+func Tracer(enable bool) types.Ext {
+	return func(ep *types.ExtensionPackage) {
+		ep.Tracer = enable
 	}
 }
 
 func Verify(verify bool) types.Ext {
 	return func(ep *types.ExtensionPackage) {
 		ep.Verify = verify
-
 	}
 }

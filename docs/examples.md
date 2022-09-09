@@ -42,8 +42,8 @@ import (
 )
 
 func main() {
-    session := requests.HTMLSession(5, "", true, true)
-    _, prep := requests.PrepareRequest("HTTP/1.1", "get", "https://ja3er.com/json", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+    session := requests.HTMLSession()
+    _, prep := requests.PrepareRequest("HTTP/1.1", "get", "https://ja3er.com/json", nil, nil, nil, nil, nil, nil, nil, nil)
     tr, _ := ja3transport.NewTransport("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53-10,0-23-65281-10-11-35-16-5-13-18-51-45-43-27-21,29-23-24,0")
     session.Client.Transport = tr
     resp := session.Send(prep)

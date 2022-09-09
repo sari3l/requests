@@ -1,14 +1,18 @@
 package requests
 
 import (
+	"context"
 	"crypto/tls"
 	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 	"github.com/sari3l/requests/ext"
+	"github.com/sari3l/requests/internal/processbar"
+	tracer2 "github.com/sari3l/requests/internal/tracer"
 	"github.com/sari3l/requests/types"
 	"golang.org/x/net/proxy"
 	"log"
 	"net/http"
+	"net/http/httptrace"
 	nUrl "net/url"
 	"time"
 )
@@ -18,21 +22,19 @@ type Session struct {
 	Client       *http.Client
 	adapter      *adapter
 	cacheRequest *prepareRequest
+	tracer       *tracer2.Tracer
 }
 
-func HTMLSession(timeout int, proxy string, redirect bool, verify bool) *Session {
+func HTMLSession() *Session {
 	s := &Session{
-		adapter: &adapter{},
+		adapter: &adapter{context: context.Background()},
 		Client: &http.Client{
 			Transport: new(http.Transport),
 		},
 	}
-
-	s.Timeout = timeout
-	s.Proxy = proxy
-	s.AllowRedirects = redirect
-	s.Verify = verify
-
+	s.Timeout = 5
+	s.Redirect = true
+	s.Verify = true
 	return s
 }
 
@@ -60,11 +62,15 @@ func (s *Session) request() *Response {
 		return nil
 	}
 
+	s.prepareTracer()
+	s.prepareProcessOptions()
+	s.prepareContext()
+
 	return s.Send(s.cacheRequest)
 }
 
 func (s *Session) prepareRequest() (error, *prepareRequest) {
-	err, prep := PrepareRequest(s.Proto, s.Method, s.Url, s.Params, s.Headers, s.Cookies, s.Data, s.Json, s.Files, s.Stream, s.Auth, s.Hooks)
+	err, prep := PrepareRequest(s.Protocol, s.Method, s.Url, s.Params, s.Headers, s.Cookies, s.Form, s.Json, s.Files, s.Stream, s.Auth)
 	if err != nil {
 		return err, nil
 	}
@@ -80,36 +86,44 @@ func (s *Session) prepareClient() error {
 	}
 	_ = s.prepareRedirect()
 	_ = s.prepareVerify()
-
 	return nil
 }
 
 func (s *Session) Send(prep *prepareRequest) *Response {
 	// 计时开机
-	startTime := time.Now().UnixMilli()
-	// 后续根据协议，切换adapter（实际go对应client配置）
-	resp := s.adapter.send(s.Client, prep, s.Hooks)
+	startTime := time.Now()
+	// 后续根据协议，切换 adapter（实际go对应client配置）
+	resp := s.adapter.send(s.Client, prep, &s.Hooks)
+	history := make([]*Response, 0)
+
+	if resp != nil {
+		if s.Redirect {
+			s.cacheRequest = prep
+			history = s.resolveRedirects(resp)
+		}
+
+		if len(history) > 0 {
+			history = append([]*Response{resp}, history...)
+			resp = history[len(history)-1]
+			resp.History = history[:len(history)-1]
+		}
+	}
+
+	endTime := time.Now()
+	if s.tracer != nil {
+		s.tracer.StartTime = startTime
+		s.tracer.EndTime = endTime
+	}
+
+	if s.Tracer == true {
+		log.Println(s.tracer.ToString())
+	}
+
 	if resp == nil {
 		return nil
 	}
-	usedTime := time.Now().UnixMilli() - startTime
-
-	resp.Time = usedTime
-
-	history := make([]*Response, 0)
-	if s.AllowRedirects {
-		s.cacheRequest = prep
-		history = s.resolveRedirects(resp)
-	}
-
-	if len(history) > 0 {
-		history = append([]*Response{resp}, history...)
-		resp = history[len(history)-1]
-		resp.History = history[:len(history)-1]
-	}
 
 	resp.Session = s
-
 	return resp
 }
 
@@ -137,7 +151,7 @@ func (s *Session) resolveRedirects(resp *Response) []*Response {
 			return history
 		}
 		redirectPrep.cookies = resp.Cookies()
-		s.AllowRedirects = false
+		s.Redirect = false
 		resp = s.Send(redirectPrep)
 		if resp == nil {
 			break
@@ -203,6 +217,39 @@ func (s *Session) prepareVerify() error {
 		}
 	}
 	return nil
+}
+
+func (s *Session) prepareTracer() {
+	newTracer := tracer2.Tracer{Enable: s.Tracer}
+	newTracer.Output.Url = s.Url
+	newTracer.Output.Method = s.Method
+	trace := newTracer.Init()
+	s.tracer = trace
+}
+
+func (s *Session) prepareProcessOptions() {
+	if s.ProcessOptions == nil {
+		s.ProcessOptions = make([]processbar.Option, 0)
+	}
+	s.ProcessOptions = append(s.ProcessOptions, processbar.OptionsUrl(s.Url))
+}
+
+func (s *Session) prepareContext() {
+	s.adapter.context = httptrace.WithClientTrace(s.adapter.context, s.tracer.ClientTrace)
+	s.adapter.context = context.WithValue(s.adapter.context, "processOptions", s.ProcessOptions)
+}
+
+func (s *Session) prepareHooks(hooks types.HooksDict) {
+	if s.Hooks == nil {
+		s.Hooks = ext.DefaultHooks()
+	}
+	for event, _hooks := range hooks {
+		if s.Hooks[event] != nil {
+			s.Hooks[event] = append(s.Hooks[event], _hooks...)
+		} else {
+			s.Hooks[event] = _hooks
+		}
+	}
 }
 
 // crypto/tls 已做nil检查，直接传入即可

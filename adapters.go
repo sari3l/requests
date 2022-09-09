@@ -1,10 +1,14 @@
 package requests
 
 import (
+	"bytes"
+	"context"
 	"github.com/pkg/errors"
 	"github.com/sari3l/requests/ext"
+	"github.com/sari3l/requests/internal/decoder"
+	"github.com/sari3l/requests/internal/processbar"
 	"github.com/sari3l/requests/types"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	nUrl "net/url"
@@ -14,11 +18,12 @@ import (
 
 // 后续转为接口，需要引入其他adapter
 type adapter struct {
+	context context.Context
 }
 
-func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.HooksDict) *Response {
+func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks *types.HooksDict) *Response {
 	req := &Request{Request: &http.Request{Proto: prep.proto}}
-
+	req.Request = req.WithContext(a.context)
 	req.Method = prep.method
 
 	url, _ := nUrl.Parse(prep.url)
@@ -44,8 +49,8 @@ func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.Ho
 		req.Body = *prep.body
 	}
 
-	requestHandle := ext.DisPatchHook("request", hooks, *req).(Request)
-	clientHandle := ext.DisPatchHook("client", hooks, *client).(http.Client)
+	requestHandle := ext.DisPatchHook("request", *hooks, *req).(Request)
+	clientHandle := ext.DisPatchHook("client", *hooks, *client).(http.Client)
 
 	resp, err := clientHandle.Do(requestHandle.Request)
 	if resp == nil || err != nil {
@@ -58,22 +63,29 @@ func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks types.Ho
 		return nil
 	}
 
-	responseHandle := ext.DisPatchHook("response", hooks, *response).(Response)
+	responseHandle := ext.DisPatchHook("response", *hooks, *response).(Response)
 
 	return &responseHandle
 }
 
 func (a *adapter) buildResponse(req *http.Request, resp *http.Response) *Response {
+	// 允许接入多个writer
+	buf := &bytes.Buffer{}
+	opts := a.context.Value("processOptions").([]processbar.Option)
+	pb := processbar.NewProcessBar(resp.ContentLength, opts...)
+	_, err := io.Copy(io.MultiWriter(buf, pb), resp.Body)
 
-	raw, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("%+v\n", errors.WithStack(err))
 		return nil
 	}
 	defer resp.Body.Close()
+	raw := buf.Bytes()
+	//raw, err := ioutil.ReadAll(resp.Body)
 
+	// 判断raw长度是否需要解码
 	encoding := resp.Header.Get("Content-Encoding")
-	if err = decompressRaw(&raw, encoding); err != nil {
+	if err = decoder.DecompressRaw(&raw, encoding); err != nil {
 		log.Printf("%+v\n", errors.WithStack(err))
 		return nil
 	}
@@ -81,7 +93,7 @@ func (a *adapter) buildResponse(req *http.Request, resp *http.Response) *Respons
 	r := &Response{
 		Ok:       resp.StatusCode == 200,
 		Response: resp,
-		Raw:      raw,
+		Raw:      &raw,
 		Html:     string(raw),
 		cookies:  append(resp.Cookies(), req.Cookies()...),
 	}

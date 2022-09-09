@@ -10,13 +10,13 @@
 
 <h1 align="center"><img src="https://raw.githubusercontent.com/sari3l/requests/main/docs/static/logo.png" alt="Logo"/></h1>
 
-## 安装
+## Install
 
 ```shell
 go get github.com/sari3l/requests
 ```
 
-## Quick Demo
+## Demo
 
 ```golang
 import (
@@ -44,7 +44,7 @@ func main() {
 }
 ```
 
-## 链接
+## Document
 
 - [说明文档](https://requests.sari3l.com)
 
