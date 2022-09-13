@@ -314,7 +314,6 @@ func renderProcessBar(c pbConfig, s *state) (int, error) {
 	// 中间
 	if c.fullWidth {
 		width := getWidth()
-		//c.width = width - getStringWidth(c, c.customPrefix, false) - len(leftBrac) - len(rightBrac)
 		c.width = width - 5 - len(leftBrac) - len(rightBrac)
 		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
 	}
