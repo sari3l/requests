@@ -7,12 +7,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sari3l/requests/ext"
 	"github.com/sari3l/requests/internal/processbar"
-	tracer2 "github.com/sari3l/requests/internal/tracer"
 	"github.com/sari3l/requests/types"
 	"golang.org/x/net/proxy"
 	"log"
 	"net/http"
-	"net/http/httptrace"
 	nUrl "net/url"
 	"time"
 )
@@ -22,7 +20,6 @@ type Session struct {
 	Client       *http.Client
 	adapter      *adapter
 	cacheRequest *prepareRequest
-	tracer       *tracer2.Tracer
 }
 
 func HTMLSession() *Session {
@@ -62,9 +59,9 @@ func (s *Session) request() *Response {
 		return nil
 	}
 
-	s.prepareTracer()
 	s.prepareProcessOptions()
 	s.prepareContext()
+	s.adapter.tracerEnable = s.Tracer
 
 	return s.Send(s.cacheRequest)
 }
@@ -91,7 +88,6 @@ func (s *Session) prepareClient() error {
 
 func (s *Session) Send(prep *prepareRequest) *Response {
 	// 计时开机
-	startTime := time.Now()
 	// 后续根据协议，切换 adapter（实际go对应client配置）
 	resp := s.adapter.send(s.Client, prep, &s.Hooks)
 	history := make([]*Response, 0)
@@ -107,16 +103,6 @@ func (s *Session) Send(prep *prepareRequest) *Response {
 			resp = history[len(history)-1]
 			resp.History = history[:len(history)-1]
 		}
-	}
-
-	endTime := time.Now()
-	if s.tracer != nil {
-		s.tracer.StartTime = startTime
-		s.tracer.EndTime = endTime
-	}
-
-	if s.Tracer == true {
-		log.Println(s.tracer.ToString())
 	}
 
 	if resp == nil {
@@ -139,7 +125,9 @@ func (s *Session) resolveRedirects(resp *Response) []*Response {
 	history := make([]*Response, 0)
 	url := resp.Header.Get("Location")
 	for url != "" {
-		if u := string(url[0]); u == "/" || u == "." {
+		if url[0:2] == "//" {
+			url = resp.Request.URL.Scheme + ":" + url
+		} else if u := string(url[0]); u == "/" || u == "." {
 			uTmp := resp.Request.URL
 			uTmp.Path = url
 			url = uTmp.String()
@@ -219,14 +207,6 @@ func (s *Session) prepareVerify() error {
 	return nil
 }
 
-func (s *Session) prepareTracer() {
-	newTracer := tracer2.Tracer{Enable: s.Tracer}
-	newTracer.Output.Url = s.Url
-	newTracer.Output.Method = s.Method
-	trace := newTracer.Init()
-	s.tracer = trace
-}
-
 func (s *Session) prepareProcessOptions() {
 	if s.ProcessOptions == nil {
 		s.ProcessOptions = make([]processbar.Option, 0)
@@ -235,7 +215,6 @@ func (s *Session) prepareProcessOptions() {
 }
 
 func (s *Session) prepareContext() {
-	s.adapter.context = httptrace.WithClientTrace(s.adapter.context, s.tracer.ClientTrace)
 	s.adapter.context = context.WithValue(s.adapter.context, "processOptions", s.ProcessOptions)
 }
 
