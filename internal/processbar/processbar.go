@@ -97,12 +97,13 @@ func (pb *processBar) Add64(num int64) error {
 	pb.lock.Lock()
 	defer pb.lock.Unlock()
 
-	if pb.config.max == 0 || pb.config.invisible == true {
+	if pb.config.max <= 0 || pb.config.invisible == true {
 		return nil
 	}
 
 	pb.state.currentNum += num
 	if pb.state.currentNum > pb.config.max {
+		fmt.Println(pb.state.currentNum, pb.config.max)
 		return errors.New("超过限制长度")
 	}
 
