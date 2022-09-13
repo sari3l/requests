@@ -66,8 +66,9 @@ type state struct {
 type Option func(p *processBar)
 
 type pbConfig struct {
+	// 开关
+	enable bool
 	// 显示选项
-	invisible          bool
 	cleanAfterFinished bool
 	max                int64
 	writer             io.Writer
@@ -97,7 +98,7 @@ func (pb *processBar) Add64(num int64) error {
 	pb.lock.Lock()
 	defer pb.lock.Unlock()
 
-	if pb.config.max <= 0 || pb.config.invisible == true {
+	if pb.config.max <= 0 || pb.config.enable == true {
 		return nil
 	}
 
@@ -211,9 +212,9 @@ func OptionsCleanAfterFinish(enable bool) Option {
 	}
 }
 
-func OptionsInvisible(enable bool) Option {
+func OptionsEnables(enable bool) Option {
 	return func(pb *processBar) {
-		pb.config.invisible = enable
+		pb.config.enable = enable
 	}
 }
 
