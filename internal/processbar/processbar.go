@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"golang.org/x/term"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,8 +66,9 @@ type state struct {
 type Option func(p *processBar)
 
 type pbConfig struct {
+	// 开关
+	enable bool
 	// 显示选项
-	invisible          bool
 	cleanAfterFinished bool
 	max                int64
 	writer             io.Writer
@@ -83,16 +85,26 @@ type pbConfig struct {
 	width            int
 }
 
+func getBasicState() state {
+	now := time.Now()
+	return state{
+		startTime:   now,
+		lastShown:   now,
+		counterTime: now,
+	}
+}
+
 func (pb *processBar) Add64(num int64) error {
 	pb.lock.Lock()
 	defer pb.lock.Unlock()
 
-	if pb.config.max == 0 || pb.config.invisible == true {
+	if pb.config.max <= 0 || pb.config.enable == true {
 		return nil
 	}
 
 	pb.state.currentNum += num
 	if pb.state.currentNum > pb.config.max {
+		fmt.Println(pb.state.currentNum, pb.config.max)
 		return errors.New("超过限制长度")
 	}
 
@@ -200,9 +212,9 @@ func OptionsCleanAfterFinish(enable bool) Option {
 	}
 }
 
-func OptionsInvisible(enable bool) Option {
+func OptionsEnables(enable bool) Option {
 	return func(pb *processBar) {
-		pb.config.invisible = enable
+		pb.config.enable = enable
 	}
 }
 
@@ -234,6 +246,7 @@ func OptionsUrl(url string) Option {
 
 func NewProcessBar(lens int64, opts ...Option) *processBar {
 	pr := &processBar{
+		state: getBasicState(),
 		config: pbConfig{
 			max:                lens,
 			writer:             os.Stdout,
@@ -284,13 +297,26 @@ func renderProcessBar(c pbConfig, s *state) (int, error) {
 	rightBrac := ""
 	saucer := ""
 
-	// 左侧
-	leftBrac = time.Now().Format("2006-01-02 15:04:05")
+	averageRate := average(s.counterLastTenRates)
+	if len(s.counterLastTenRates) == 0 || s.finished {
+		if t := time.Since(s.startTime).Seconds(); t > 0 {
+			averageRate = s.currentBytes / t
+		} else {
+			averageRate = 0
+		}
+	}
 
+	// 左侧
+	leftBrac = fmt.Sprintf("%s %s %3.2f%%", s.startTime.Format("2006-01-02 15:04:05"), c.customPrefix, float64(s.currentNum*100)/float64(c.max))
+	// 右侧
+	currentHumanize, currentSuffix := humanizeBytes(s.currentBytes)
+	speedHumanize, speedSuffix := humanizeBytes(averageRate)
+	rightBrac += fmt.Sprintf("%s%s %s%s/s [%s]", currentHumanize, currentSuffix, speedHumanize, speedSuffix,
+		(time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String())
 	// 中间
 	if c.fullWidth {
 		width := getWidth()
-		c.width = width - getStringWidth(c, c.customPrefix, false) - 12 - len(leftBrac) - len(rightBrac)
+		c.width = width - 5 - len(leftBrac) - len(rightBrac)
 		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
 	}
 
@@ -298,12 +324,8 @@ func renderProcessBar(c pbConfig, s *state) (int, error) {
 		saucer = c.theme.BarStart + strings.Repeat(c.theme.Saucer, s.currentSaucerSize-1) + c.theme.SaucerRight + strings.Repeat(c.theme.SaucerPadding, c.width-s.currentSaucerSize) + c.theme.BarEnd
 	}
 
-	// 右侧
-
 	// 拼接
-	str := fmt.Sprintf("\r%s %s %s %3.2f%%", leftBrac, c.customPrefix, saucer, float64(s.currentNum*100)/float64(c.max))
-
-	// 速率计算先不管
+	str := fmt.Sprintf("\r%s %s %s", leftBrac, saucer, rightBrac)
 
 	return len(str), writeString(c, str)
 }
@@ -323,6 +345,31 @@ func clearProcessBar(c pbConfig, s state) error {
 	return writeString(c, str)
 }
 
-func getStringWidth(c pbConfig, str string, colorize bool) int {
-	return len(str)
+func average(ss []float64) float64 {
+	total := 0.0
+	for _, v := range ss {
+		total += v
+	}
+	return total / float64(len(ss))
+}
+
+func humanizeBytes(s float64) (string, string) {
+	sizes := []string{" B", " kB", " MB", " GB", " TB", " PB", " EB"}
+	base := 1024.0
+	if s < 10 {
+		return fmt.Sprintf("%2.0f", s), sizes[0]
+	}
+	e := math.Floor(logn(float64(s), base))
+	suffix := sizes[int(e)]
+	val := math.Floor(float64(s)/math.Pow(base, e)*10+0.5) / 10
+	f := "%.0f"
+	if val < 10 {
+		f = "%.1f"
+	}
+
+	return fmt.Sprintf(f, val), suffix
+}
+
+func logn(n, b float64) float64 {
+	return math.Log(n) / math.Log(b)
 }

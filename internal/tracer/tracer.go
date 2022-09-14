@@ -33,8 +33,7 @@ type Tracer struct {
 	EndTime     time.Time
 	ClientTrace *httptrace.ClientTrace
 	Output      struct {
-		Url               string
-		Method            string
+		Prefix            string
 		remoteAddr        string
 		timeDNSLookup     time.Duration
 		timeTCPConnect    time.Duration
@@ -166,7 +165,7 @@ func (t *Tracer) ToString() string {
 	t.Output.timeTotal = t.EndTime.Sub(t.StartTime)
 
 	return fmt.Sprintf(
-		"%s >>>>> %s\n"+
+		"%s\n"+
 			"[>] %-20s: %20s\n"+
 			"[v] %-20s: %20v\n"+
 			"[v] %-20s: %20v\n"+
@@ -176,7 +175,7 @@ func (t *Tracer) ToString() string {
 			"[v] %-20s: %20v\n"+
 			"[-] %-20s: %20v\n"+
 			"[x] %-20s: %20v\n",
-		t.Output.Method, t.Output.Url,
+		t.Output.Prefix,
 		"RemoteAddr", t.Output.remoteAddr,
 		"DNSLookupCost", t.Output.timeDNSLookup,
 		"TCPConnectCost", t.Output.timeTCPConnect,

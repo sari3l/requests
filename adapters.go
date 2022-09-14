@@ -3,26 +3,33 @@ package requests
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/sari3l/requests/ext"
 	"github.com/sari3l/requests/internal/decoder"
 	"github.com/sari3l/requests/internal/processbar"
+	"github.com/sari3l/requests/internal/tracer"
 	"github.com/sari3l/requests/types"
 	"io"
 	"log"
 	"net/http"
+	"net/http/httptrace"
 	nUrl "net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // 后续转为接口，需要引入其他adapter
 type adapter struct {
-	context context.Context
+	context      context.Context
+	tracerEnable bool
 }
 
 func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks *types.HooksDict) *Response {
+	trace := prepareTracer(a.tracerEnable, fmt.Sprintf("%s >>>>> %s", prep.method, prep.url))
 	req := &Request{Request: &http.Request{Proto: prep.proto}}
+	a.context = httptrace.WithClientTrace(a.context, trace.ClientTrace)
 	req.Request = req.WithContext(a.context)
 	req.Method = prep.method
 
@@ -52,7 +59,17 @@ func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks *types.H
 	requestHandle := ext.DisPatchHook("request", *hooks, *req).(Request)
 	clientHandle := ext.DisPatchHook("client", *hooks, *client).(http.Client)
 
+	if a.tracerEnable {
+		trace.StartTime = time.Now()
+	}
+
 	resp, err := clientHandle.Do(requestHandle.Request)
+
+	if a.tracerEnable {
+		trace.EndTime = time.Now()
+		log.Println(trace.ToString())
+	}
+
 	if resp == nil || err != nil {
 		log.Printf("%+v\n", errors.WithStack(err))
 		return nil
@@ -99,4 +116,11 @@ func (a *adapter) buildResponse(req *http.Request, resp *http.Response) *Respons
 	}
 
 	return r
+}
+
+func prepareTracer(enable bool, prefix string) *tracer.Tracer {
+	newTracer := tracer.Tracer{Enable: enable}
+	newTracer.Output.Prefix = prefix
+	trace := newTracer.Init()
+	return trace
 }
