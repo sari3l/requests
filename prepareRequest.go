@@ -33,10 +33,10 @@ func PrepareRequest(proto string, method string, url string, params types.Dict, 
 	if err = _prepareRequest.prepareUrl(url, params); err != nil {
 		return err, nil
 	}
-	if err = _prepareRequest.prepareBody(form, files, json, stream); err != nil {
+	if err = _prepareRequest.prepareHeaders(headers); err != nil {
 		return err, nil
 	}
-	if err = _prepareRequest.prepareHeaders(headers); err != nil {
+	if err = _prepareRequest.prepareBody(form, files, json, stream); err != nil {
 		return err, nil
 	}
 	if err = _prepareRequest.prepareCookies(cookies); err != nil {
