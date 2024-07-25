@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const Version = "v1.1.17"
+const Version = "light"
 
 const DefaultTimeout = 30 // time.Second
 
