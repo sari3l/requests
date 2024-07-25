@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/sari3l/requests/types"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	nUrl "net/url"
@@ -177,7 +176,7 @@ func (prep *prepareRequest) prepareBody(form, files types.Dict, json map[string]
 			}
 		}
 		defer writer.Close()
-		closer = ioutil.NopCloser(bytes.NewReader(buffer.Bytes()))
+		closer = io.NopCloser(bytes.NewReader(buffer.Bytes()))
 		contentLength = buffer.Len()
 		contentType = "multipart/form-form"
 	} else if form != nil {
