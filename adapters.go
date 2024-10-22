@@ -88,7 +88,10 @@ func (a *adapter) send(client *http.Client, prep *prepareRequest, hooks *types.H
 func (a *adapter) buildResponse(req *http.Request, resp *http.Response) *Response {
 	// 允许接入多个writer
 	buf := &bytes.Buffer{}
-	opts := a.context.Value("processOptions").([]processbar.Option)
+	opts, ok := a.context.Value("processOptions").([]processbar.Option)
+	if !ok {
+		opts = []processbar.Option{}
+	}
 	pb := processbar.NewProcessBar(resp.ContentLength, opts...)
 	_, err := io.Copy(io.MultiWriter(buf, pb), resp.Body)
 
